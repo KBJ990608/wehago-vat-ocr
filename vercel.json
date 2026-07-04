@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/kskill/:path*",
+      "destination": "https://k-skill-proxy.nomadamas.org/:path*"
+    }
+  ]
+}
