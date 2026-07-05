@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
     define: {
       __LAW_API_OC__: JSON.stringify(env.LAW_API_OC ?? ''),
       __KSKILL_PROXY_BASE_URL__: JSON.stringify(env.KSKILL_PROXY_BASE_URL ?? ''),
+      __APP_LOGIN_EMAIL__: JSON.stringify(env.APP_LOGIN_EMAIL ?? 'admin@example.com'),
+      __APP_LOGIN_PASSWORD__: JSON.stringify(env.APP_LOGIN_PASSWORD ?? 'change-me'),
     },
     server: {
       proxy: {

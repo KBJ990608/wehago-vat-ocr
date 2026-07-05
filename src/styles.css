@@ -29,6 +29,64 @@ button {
   padding: 20px;
 }
 
+.loginPage {
+  align-items: center;
+  display: grid;
+  min-height: 100vh;
+  padding: 22px;
+}
+
+.loginCard {
+  background: #fff;
+  border: 1px solid #d9e1ea;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 420px;
+  padding: 28px;
+  width: 100%;
+}
+
+.loginCard label {
+  color: #43576b;
+  display: grid;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 6px;
+}
+
+.loginCard input {
+  border: 1px solid #c7d2df;
+  border-radius: 7px;
+  color: #1c2836;
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.loginCard input:focus {
+  border-color: #7aa6ff;
+  outline: none;
+}
+
+.loginCard small {
+  color: #617285;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.loginError {
+  color: #b8261e;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.loginButton {
+  justify-content: center;
+  width: 100%;
+}
+
 .topbar {
   align-items: center;
   display: flex;

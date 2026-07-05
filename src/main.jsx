@@ -60,6 +60,10 @@ const DECISION_LABELS = {
   '검토필요': 'Needs review',
 };
 
+const AUTH_STORAGE_KEY = 'wehago-vat-auth-session';
+const APP_LOGIN_EMAIL = typeof __APP_LOGIN_EMAIL__ === 'string' ? __APP_LOGIN_EMAIL__ : 'admin@example.com';
+const APP_LOGIN_PASSWORD = typeof __APP_LOGIN_PASSWORD__ === 'string' ? __APP_LOGIN_PASSWORD__ : 'change-me';
+
 const COLUMN_ALIASES = {
   '일자': ['일자', '거래일자', '사용일자', '승인일자', '매입일자', '날짜'],
   '거래처': ['거래처', '거래처명', '가맹점', '가맹점명', '상호', '사용처', '상호명'],
@@ -234,6 +238,71 @@ function applyJudgement(row, articleReferences = {}) {
 
 function normalizeDecision(value) {
   return normalizeText(value).replace('비공제', '불공제');
+}
+
+function readSavedSession() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  function submitLogin(event) {
+    event.preventDefault();
+    if (email.trim() === APP_LOGIN_EMAIL && password === APP_LOGIN_PASSWORD) {
+      onLogin({ email: email.trim(), signedInAt: new Date().toISOString() });
+      return;
+    }
+    setError('Invalid email or password.');
+  }
+
+  return (
+    <main className="loginPage">
+      <form className="loginCard" onSubmit={submitLogin}>
+        <div>
+          <p className="eyebrow">WEHAGO Credit Card Purchases</p>
+          <h1>Sign in</h1>
+        </div>
+        <label>
+          Email
+          <input
+            autoComplete="email"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError('');
+            }}
+            placeholder="admin@example.com"
+            type="email"
+          />
+        </label>
+        <label>
+          Password
+          <input
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              setError('');
+            }}
+            placeholder="Password"
+            type="password"
+          />
+        </label>
+        {error ? <p className="loginError">{error}</p> : null}
+        <button type="submit" className="primary loginButton">Sign in</button>
+        <small>
+          Configure credentials with <code>APP_LOGIN_EMAIL</code> and <code>APP_LOGIN_PASSWORD</code>.
+        </small>
+      </form>
+    </main>
+  );
 }
 
 function buildBasisReason(row) {
@@ -432,6 +501,7 @@ async function preprocessImage(file) {
 }
 
 function App() {
+  const [session, setSession] = useState(readSavedSession);
   const [fileName, setFileName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [rows, setRows] = useState([]);
@@ -454,6 +524,7 @@ function App() {
   }, [rows]);
 
   useEffect(() => {
+    if (!session) return undefined;
     let cancelled = false;
 
     async function loadVatAct() {
@@ -484,7 +555,23 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [session]);
+
+  function handleLogin(nextSession) {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
+    setSession(nextSession);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    setSession(null);
+    setFileName('');
+    setImageUrl('');
+    setRows([]);
+    setPreviewText('');
+    setStatus('Waiting');
+    setRuleStatus('Rule engine ready');
+  }
 
   async function handleSpreadsheet(file) {
     if (!file) return;
@@ -727,6 +814,10 @@ function App() {
     setBulkBasisStatus('');
   }
 
+  if (!session) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
     <main className="app">
       <section className="topbar">
@@ -745,6 +836,9 @@ function App() {
           <button type="button" className="primary" onClick={downloadExcel} disabled={!rows.length} title="Download result Excel">
             <Download size={18} />
             Result Excel
+          </button>
+          <button type="button" className="secondaryButton" onClick={handleLogout} title="Sign out">
+            Sign out
           </button>
         </div>
       </section>
