@@ -349,18 +349,13 @@ function LoginScreen({ onLogin, onCancel, onSignup }) {
           아직 계정이 없으신가요?
           <button type="button" onClick={onSignup}>회원가입</button>
         </p>
-        {onCancel ? (
-          <button type="button" className="secondaryButton loginButton" onClick={onCancel}>
-            로그인 없이 사용
-          </button>
-        ) : null}
       </form>
       </section>
     </main>
   );
 }
 
-function SignupScreen({ onSignupComplete, onBack, onCancel }) {
+function SignupScreen({ onSignupComplete, onBack }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -476,11 +471,6 @@ function SignupScreen({ onSignupComplete, onBack, onCancel }) {
         <button type="button" className="secondaryButton loginButton" onClick={onBack}>
           로그인으로 돌아가기
         </button>
-        {onCancel ? (
-          <button type="button" className="secondaryButton loginButton" onClick={onCancel}>
-            로그인 없이 사용
-          </button>
-        ) : null}
         <small>
           현재 회원가입 정보는 이 브라우저에만 저장됩니다. 실제 서비스 배포 시에는 서버 인증으로 교체해야 합니다.
         </small>
@@ -1029,7 +1019,6 @@ function App() {
       <SignupScreen
         onSignupComplete={handleLogin}
         onBack={() => setAuthView('login')}
-        onCancel={() => setAuthView('app')}
       />
     );
   }
