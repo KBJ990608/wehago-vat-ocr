@@ -294,12 +294,9 @@ function LoginScreen({ onLogin, onCancel, onSignup }) {
   return (
     <main className="loginPage">
       <section className="authShell">
-        <div className="authBrand">
-          <div className="authLogo" aria-hidden="true">
-            <span />
-          </div>
-          <strong>VATReview</strong>
-        </div>
+        <button type="button" className="authBrandButton" onClick={onCancel} title="홈으로">
+          VATReview
+        </button>
         <p className="authWelcome">WEHAGO 신용카드 매입세액 판정에 오신 것을 환영합니다</p>
 
       <form className="loginCard" onSubmit={submitLogin}>
@@ -357,9 +354,6 @@ function LoginScreen({ onLogin, onCancel, onSignup }) {
             로그인 없이 사용
           </button>
         ) : null}
-        <small>
-          계정은 <code>APP_LOGIN_EMAIL</code>과 <code>APP_LOGIN_PASSWORD</code>로 설정합니다.
-        </small>
       </form>
       </section>
     </main>
