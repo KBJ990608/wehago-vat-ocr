@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AlertCircle, Check, Download, FileImage, FileSpreadsheet, RefreshCw, Upload, X } from 'lucide-react';
+import { AlertCircle, Check, Download, FileImage, FileSpreadsheet, LockKeyhole, Mail, RefreshCw, Upload, X } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import * as XLSX from 'xlsx';
 import { fetchVatAct } from './lawApi';
@@ -293,44 +293,63 @@ function LoginScreen({ onLogin, onCancel, onSignup }) {
 
   return (
     <main className="loginPage">
+      <section className="authShell">
+        <div className="authBrand">
+          <div className="authLogo" aria-hidden="true">
+            <span />
+          </div>
+          <strong>VATReview</strong>
+        </div>
+        <p className="authWelcome">WEHAGO 신용카드 매입세액 판정에 오신 것을 환영합니다</p>
+
       <form className="loginCard" onSubmit={submitLogin}>
         <div>
-          <p className="eyebrow">WEHAGO 신용카드 매입</p>
           <h1>로그인</h1>
         </div>
         <label>
           이메일
-          <input
-            autoComplete="email"
-            value={email}
-            onChange={(event) => {
-              setEmail(event.target.value);
-              setError('');
-            }}
-            placeholder="admin@example.com"
-            type="email"
-          />
+          <div className="authInput">
+            <Mail size={22} />
+            <input
+              autoComplete="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setError('');
+              }}
+              placeholder="admin@example.com"
+              type="email"
+            />
+          </div>
         </label>
         <label>
           비밀번호
-          <input
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => {
-              setPassword(event.target.value);
-              setError('');
-            }}
-            placeholder="비밀번호"
-            type="password"
-          />
+          <div className="authInput">
+            <LockKeyhole size={22} />
+            <input
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setError('');
+              }}
+              placeholder="비밀번호"
+              type="password"
+            />
+          </div>
         </label>
+        <button type="button" className="forgotButton" onClick={() => setError('비밀번호 재설정은 아직 연결되지 않았습니다.')}>
+          비밀번호를 잊으셨나요?
+        </button>
         {error ? <p className="loginError">{error}</p> : null}
         <button type="submit" className="primary loginButton">로그인</button>
-        <button type="button" className="secondaryButton loginButton" onClick={onSignup}>
-          회원가입
+        <div className="authDivider"><span>또는</span></div>
+        <button type="button" className="googleButton" onClick={() => setError('Google 로그인은 아직 연결되지 않았습니다.')}>
+          <span aria-hidden="true">G</span>
+          Google로 로그인
         </button>
         <p className="authSwitch">
-          계정이 없나요?
+          아직 계정이 없으신가요?
           <button type="button" onClick={onSignup}>회원가입</button>
         </p>
         {onCancel ? (
@@ -342,6 +361,7 @@ function LoginScreen({ onLogin, onCancel, onSignup }) {
           계정은 <code>APP_LOGIN_EMAIL</code>과 <code>APP_LOGIN_PASSWORD</code>로 설정합니다.
         </small>
       </form>
+      </section>
     </main>
   );
 }
