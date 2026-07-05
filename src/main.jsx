@@ -61,6 +61,7 @@ const DECISION_LABELS = {
 };
 
 const AUTH_STORAGE_KEY = 'wehago-vat-auth-session';
+const APP_ENABLE_LOGIN = typeof __APP_ENABLE_LOGIN__ === 'boolean' ? __APP_ENABLE_LOGIN__ : false;
 const APP_LOGIN_EMAIL = typeof __APP_LOGIN_EMAIL__ === 'string' ? __APP_LOGIN_EMAIL__ : 'admin@example.com';
 const APP_LOGIN_PASSWORD = typeof __APP_LOGIN_PASSWORD__ === 'string' ? __APP_LOGIN_PASSWORD__ : 'change-me';
 
@@ -524,7 +525,7 @@ function App() {
   }, [rows]);
 
   useEffect(() => {
-    if (!session) return undefined;
+    if (APP_ENABLE_LOGIN && !session) return undefined;
     let cancelled = false;
 
     async function loadVatAct() {
@@ -814,7 +815,7 @@ function App() {
     setBulkBasisStatus('');
   }
 
-  if (!session) {
+  if (APP_ENABLE_LOGIN && !session) {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
@@ -837,9 +838,11 @@ function App() {
             <Download size={18} />
             Result Excel
           </button>
-          <button type="button" className="secondaryButton" onClick={handleLogout} title="Sign out">
-            Sign out
-          </button>
+          {APP_ENABLE_LOGIN ? (
+            <button type="button" className="secondaryButton" onClick={handleLogout} title="Sign out">
+              Sign out
+            </button>
+          ) : null}
         </div>
       </section>
 
