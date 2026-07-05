@@ -87,6 +87,23 @@ button {
   width: 100%;
 }
 
+.authSwitch {
+  align-items: center;
+  color: #617285;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: -2px 0 0;
+}
+
+.authSwitch button {
+  background: transparent;
+  border: 0;
+  color: #185adb;
+  font-weight: 900;
+  padding: 0;
+}
+
 .topbar {
   align-items: center;
   display: flex;

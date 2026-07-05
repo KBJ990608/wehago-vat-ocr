@@ -329,6 +329,10 @@ function LoginScreen({ onLogin, onCancel, onSignup }) {
         <button type="button" className="secondaryButton loginButton" onClick={onSignup}>
           회원가입
         </button>
+        <p className="authSwitch">
+          계정이 없나요?
+          <button type="button" onClick={onSignup}>회원가입</button>
+        </p>
         {onCancel ? (
           <button type="button" className="secondaryButton loginButton" onClick={onCancel}>
             로그인 없이 사용
