@@ -249,7 +249,7 @@ function readSavedSession() {
   }
 }
 
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, onCancel }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -298,6 +298,11 @@ function LoginScreen({ onLogin }) {
         </label>
         {error ? <p className="loginError">{error}</p> : null}
         <button type="submit" className="primary loginButton">로그인</button>
+        {onCancel ? (
+          <button type="button" className="secondaryButton loginButton" onClick={onCancel}>
+            로그인 없이 사용
+          </button>
+        ) : null}
         <small>
           계정은 <code>APP_LOGIN_EMAIL</code>과 <code>APP_LOGIN_PASSWORD</code>로 설정합니다.
         </small>
@@ -514,6 +519,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [legalBasisLoadingId, setLegalBasisLoadingId] = useState('');
   const [bulkBasisStatus, setBulkBasisStatus] = useState('');
+  const [showOptionalLogin, setShowOptionalLogin] = useState(false);
   const excelInputRef = useRef(null);
   const ocrInputRef = useRef(null);
 
@@ -561,11 +567,13 @@ function App() {
   function handleLogin(nextSession) {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
     setSession(nextSession);
+    setShowOptionalLogin(false);
   }
 
   function handleLogout() {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     setSession(null);
+    setShowOptionalLogin(false);
     setFileName('');
     setImageUrl('');
     setRows([]);
@@ -819,6 +827,10 @@ function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
+  if (showOptionalLogin && !session) {
+    return <LoginScreen onLogin={handleLogin} onCancel={() => setShowOptionalLogin(false)} />;
+  }
+
   return (
     <main className="app">
       <section className="topbar">
@@ -838,11 +850,15 @@ function App() {
             <Download size={18} />
             결과 Excel
           </button>
-          {APP_ENABLE_LOGIN ? (
+          {session ? (
             <button type="button" className="secondaryButton" onClick={handleLogout} title="로그아웃">
               로그아웃
             </button>
-          ) : null}
+          ) : (
+            <button type="button" className="secondaryButton" onClick={() => setShowOptionalLogin(true)} title="로그인">
+              로그인
+            </button>
+          )}
         </div>
       </section>
 
