@@ -61,6 +61,7 @@ const DECISION_LABELS = {
 };
 
 const AUTH_STORAGE_KEY = 'wehago-vat-auth-session';
+const AUTH_USERS_STORAGE_KEY = 'wehago-vat-auth-users';
 const APP_ENABLE_LOGIN = typeof __APP_ENABLE_LOGIN__ === 'boolean' ? __APP_ENABLE_LOGIN__ : false;
 const APP_LOGIN_EMAIL = typeof __APP_LOGIN_EMAIL__ === 'string' ? __APP_LOGIN_EMAIL__ : 'admin@example.com';
 const APP_LOGIN_PASSWORD = typeof __APP_LOGIN_PASSWORD__ === 'string' ? __APP_LOGIN_PASSWORD__ : 'change-me';
@@ -249,15 +250,42 @@ function readSavedSession() {
   }
 }
 
-function LoginScreen({ onLogin, onCancel }) {
+function readRegisteredUsers() {
+  try {
+    const users = JSON.parse(localStorage.getItem(AUTH_USERS_STORAGE_KEY) || '[]');
+    return Array.isArray(users) ? users : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRegisteredUsers(users) {
+  localStorage.setItem(AUTH_USERS_STORAGE_KEY, JSON.stringify(users));
+}
+
+function findRegisteredUser(email) {
+  const normalizedEmail = normalizeText(email).toLowerCase();
+  return readRegisteredUsers().find((user) => normalizeText(user.email).toLowerCase() === normalizedEmail);
+}
+
+function LoginScreen({ onLogin, onCancel, onSignup }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   function submitLogin(event) {
     event.preventDefault();
-    if (email.trim() === APP_LOGIN_EMAIL && password === APP_LOGIN_PASSWORD) {
-      onLogin({ email: email.trim(), signedInAt: new Date().toISOString() });
+    const trimmedEmail = email.trim();
+    const registeredUser = findRegisteredUser(trimmedEmail);
+    const isAdminLogin = trimmedEmail === APP_LOGIN_EMAIL && password === APP_LOGIN_PASSWORD;
+    const isRegisteredLogin = registeredUser && registeredUser.password === password;
+
+    if (isAdminLogin || isRegisteredLogin) {
+      onLogin({
+        email: trimmedEmail,
+        name: registeredUser?.name || '관리자',
+        signedInAt: new Date().toISOString(),
+      });
       return;
     }
     setError('이메일 또는 비밀번호가 올바르지 않습니다.');
@@ -298,6 +326,9 @@ function LoginScreen({ onLogin, onCancel }) {
         </label>
         {error ? <p className="loginError">{error}</p> : null}
         <button type="submit" className="primary loginButton">로그인</button>
+        <button type="button" className="secondaryButton loginButton" onClick={onSignup}>
+          회원가입
+        </button>
         {onCancel ? (
           <button type="button" className="secondaryButton loginButton" onClick={onCancel}>
             로그인 없이 사용
@@ -305,6 +336,135 @@ function LoginScreen({ onLogin, onCancel }) {
         ) : null}
         <small>
           계정은 <code>APP_LOGIN_EMAIL</code>과 <code>APP_LOGIN_PASSWORD</code>로 설정합니다.
+        </small>
+      </form>
+    </main>
+  );
+}
+
+function SignupScreen({ onSignupComplete, onBack, onCancel }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [error, setError] = useState('');
+
+  function submitSignup(event) {
+    event.preventDefault();
+    const trimmedName = normalizeText(name);
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedName) {
+      setError('이름을 입력하세요.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('올바른 이메일을 입력하세요.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('비밀번호는 6자 이상 입력하세요.');
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      setError('비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+
+    if (trimmedEmail === APP_LOGIN_EMAIL.toLowerCase() || findRegisteredUser(trimmedEmail)) {
+      setError('이미 가입된 이메일입니다.');
+      return;
+    }
+
+    const nextUser = {
+      id: crypto.randomUUID(),
+      name: trimmedName,
+      email: trimmedEmail,
+      password,
+      createdAt: new Date().toISOString(),
+    };
+    saveRegisteredUsers([...readRegisteredUsers(), nextUser]);
+    onSignupComplete({
+      email: nextUser.email,
+      name: nextUser.name,
+      signedInAt: new Date().toISOString(),
+    });
+  }
+
+  return (
+    <main className="loginPage">
+      <form className="loginCard" onSubmit={submitSignup}>
+        <div>
+          <p className="eyebrow">WEHAGO 신용카드 매입</p>
+          <h1>회원가입</h1>
+        </div>
+        <label>
+          이름
+          <input
+            autoComplete="name"
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setError('');
+            }}
+            placeholder="홍길동"
+            type="text"
+          />
+        </label>
+        <label>
+          이메일
+          <input
+            autoComplete="email"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError('');
+            }}
+            placeholder="user@example.com"
+            type="email"
+          />
+        </label>
+        <label>
+          비밀번호
+          <input
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              setError('');
+            }}
+            placeholder="6자 이상"
+            type="password"
+          />
+        </label>
+        <label>
+          비밀번호 확인
+          <input
+            autoComplete="new-password"
+            value={passwordConfirm}
+            onChange={(event) => {
+              setPasswordConfirm(event.target.value);
+              setError('');
+            }}
+            placeholder="비밀번호 재입력"
+            type="password"
+          />
+        </label>
+        {error ? <p className="loginError">{error}</p> : null}
+        <button type="submit" className="primary loginButton">가입하고 시작</button>
+        <button type="button" className="secondaryButton loginButton" onClick={onBack}>
+          로그인으로 돌아가기
+        </button>
+        {onCancel ? (
+          <button type="button" className="secondaryButton loginButton" onClick={onCancel}>
+            로그인 없이 사용
+          </button>
+        ) : null}
+        <small>
+          현재 회원가입 정보는 이 브라우저에만 저장됩니다. 실제 서비스 배포 시에는 서버 인증으로 교체해야 합니다.
         </small>
       </form>
     </main>
@@ -519,7 +679,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [legalBasisLoadingId, setLegalBasisLoadingId] = useState('');
   const [bulkBasisStatus, setBulkBasisStatus] = useState('');
-  const [showOptionalLogin, setShowOptionalLogin] = useState(false);
+  const [authView, setAuthView] = useState('app');
   const excelInputRef = useRef(null);
   const ocrInputRef = useRef(null);
 
@@ -567,13 +727,13 @@ function App() {
   function handleLogin(nextSession) {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
     setSession(nextSession);
-    setShowOptionalLogin(false);
+    setAuthView('app');
   }
 
   function handleLogout() {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     setSession(null);
-    setShowOptionalLogin(false);
+    setAuthView('app');
     setFileName('');
     setImageUrl('');
     setRows([]);
@@ -824,11 +984,36 @@ function App() {
   }
 
   if (APP_ENABLE_LOGIN && !session) {
-    return <LoginScreen onLogin={handleLogin} />;
+    if (authView === 'signup') {
+      return (
+        <SignupScreen
+          onSignupComplete={handleLogin}
+          onBack={() => setAuthView('login')}
+        />
+      );
+    }
+
+    return <LoginScreen onLogin={handleLogin} onSignup={() => setAuthView('signup')} />;
   }
 
-  if (showOptionalLogin && !session) {
-    return <LoginScreen onLogin={handleLogin} onCancel={() => setShowOptionalLogin(false)} />;
+  if (!session && authView === 'login') {
+    return (
+      <LoginScreen
+        onLogin={handleLogin}
+        onSignup={() => setAuthView('signup')}
+        onCancel={() => setAuthView('app')}
+      />
+    );
+  }
+
+  if (!session && authView === 'signup') {
+    return (
+      <SignupScreen
+        onSignupComplete={handleLogin}
+        onBack={() => setAuthView('login')}
+        onCancel={() => setAuthView('app')}
+      />
+    );
   }
 
   return (
@@ -855,9 +1040,14 @@ function App() {
               로그아웃
             </button>
           ) : (
-            <button type="button" className="secondaryButton" onClick={() => setShowOptionalLogin(true)} title="로그인">
-              로그인
-            </button>
+            <>
+              <button type="button" className="secondaryButton" onClick={() => setAuthView('login')} title="로그인">
+                로그인
+              </button>
+              <button type="button" className="secondaryButton" onClick={() => setAuthView('signup')} title="회원가입">
+                회원가입
+              </button>
+            </>
           )}
         </div>
       </section>
