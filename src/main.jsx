@@ -1040,14 +1040,9 @@ function App() {
               로그아웃
             </button>
           ) : (
-            <>
-              <button type="button" className="secondaryButton" onClick={() => setAuthView('login')} title="로그인">
-                로그인
-              </button>
-              <button type="button" className="secondaryButton" onClick={() => setAuthView('signup')} title="회원가입">
-                회원가입
-              </button>
-            </>
+            <button type="button" className="secondaryButton" onClick={() => setAuthView('login')} title="로그인">
+              로그인
+            </button>
           )}
         </div>
       </section>
