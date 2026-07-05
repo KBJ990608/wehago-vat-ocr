@@ -30,34 +30,34 @@ const RESULT_COLUMNS = [...COLUMNS, '판정', '신뢰도', '근거조항', '근�
 const RESULT_OPTIONS = ['공제', '불공제', '검토필요'];
 
 const LABELS = {
-  '일자': 'Date',
-  '거래처': 'Vendor',
-  '구분': 'Tax Type',
-  '품명': 'Item',
-  '공급가액': 'Supply Amount',
-  '세액': 'VAT',
-  '비과세': 'Tax-free',
-  '합계': 'Total',
-  '국세청': 'NTS Status',
-  '업태': 'Business Type',
-  '종목': 'Business Item',
-  '유형': 'Card Type',
-  '차변계정': 'Debit Account',
-  '대변계정': 'Credit Account',
-  '전표상태': 'Voucher Status',
-  '판정': 'Decision',
-  '신뢰도': 'Confidence',
-  '근거조항': 'Legal Clause',
-  '근거키워드': 'Evidence Keywords',
-  '주의': 'Warning',
-  '법령근거': 'Legal Basis',
-  '법 기준 사유': 'Reason',
+  '일자': '일자',
+  '거래처': '거래처',
+  '구분': '구분',
+  '품명': '품명',
+  '공급가액': '공급가액',
+  '세액': '세액',
+  '비과세': '비과세',
+  '합계': '합계',
+  '국세청': '국세청',
+  '업태': '업태',
+  '종목': '종목',
+  '유형': '유형',
+  '차변계정': '차변계정',
+  '대변계정': '대변계정',
+  '전표상태': '전표상태',
+  '판정': '판정',
+  '신뢰도': '신뢰도',
+  '근거조항': '근거조항',
+  '근거키워드': '근거키워드',
+  '주의': '주의',
+  '법령근거': '법령근거',
+  '법 기준 사유': '법 기준 사유',
 };
 
 const DECISION_LABELS = {
-  '공제': 'Deductible',
-  '불공제': 'Non-deductible',
-  '검토필요': 'Needs review',
+  '공제': '공제',
+  '불공제': '불공제',
+  '검토필요': '검토필요',
 };
 
 const AUTH_STORAGE_KEY = 'wehago-vat-auth-session';
@@ -84,7 +84,7 @@ const COLUMN_ALIASES = {
 };
 
 const NUMERIC_COLUMNS = ['공급가액', '세액', '비과세', '합계'];
-const FALLBACK_REVIEW_REASON = 'Low OCR confidence. Manual review is required.';
+const FALLBACK_REVIEW_REASON = 'OCR 인식 정확도가 낮아 수동 검토가 필요합니다.';
 
 function canonicalHeader(value) {
   return normalizeText(value).replace(/[\s()[\]{}_\-/]/g, '').toLowerCase();
@@ -215,12 +215,12 @@ function shapeRow(rawRow, columnMap) {
 }
 
 function buildDefaultLegalBasis(row, judgement) {
-  const keywordLine = judgement.근거키워드 ? `Evidence keywords: ${judgement.근거키워드}` : '';
-  const warningLine = judgement.주의 ? `Warning: ${judgement.주의}` : '';
+  const keywordLine = judgement.근거키워드 ? `판정 근거 키워드: ${judgement.근거키워드}` : '';
+  const warningLine = judgement.주의 ? `주의: ${judgement.주의}` : '';
   return [
-    `[Default legal basis] ${judgement.근거조항 || 'VAT Act Articles 38 and 39'}`,
+    `[기본 법령 근거] ${judgement.근거조항 || '부가가치세법 제38조 및 제39조'}`,
     keywordLine,
-    `Decision: ${DECISION_LABELS[judgement.판정] || 'Needs review'} · Confidence: ${judgement.신뢰도 || '-'}`,
+    `판정: ${DECISION_LABELS[judgement.판정] || '검토필요'} · 신뢰도: ${judgement.신뢰도 || '-'}`,
     warningLine,
   ]
     .filter(Boolean)
@@ -260,18 +260,18 @@ function LoginScreen({ onLogin }) {
       onLogin({ email: email.trim(), signedInAt: new Date().toISOString() });
       return;
     }
-    setError('Invalid email or password.');
+    setError('이메일 또는 비밀번호가 올바르지 않습니다.');
   }
 
   return (
     <main className="loginPage">
       <form className="loginCard" onSubmit={submitLogin}>
         <div>
-          <p className="eyebrow">WEHAGO Credit Card Purchases</p>
-          <h1>Sign in</h1>
+          <p className="eyebrow">WEHAGO 신용카드 매입</p>
+          <h1>로그인</h1>
         </div>
         <label>
-          Email
+          이메일
           <input
             autoComplete="email"
             value={email}
@@ -284,7 +284,7 @@ function LoginScreen({ onLogin }) {
           />
         </label>
         <label>
-          Password
+          비밀번호
           <input
             autoComplete="current-password"
             value={password}
@@ -292,14 +292,14 @@ function LoginScreen({ onLogin }) {
               setPassword(event.target.value);
               setError('');
             }}
-            placeholder="Password"
+            placeholder="비밀번호"
             type="password"
           />
         </label>
         {error ? <p className="loginError">{error}</p> : null}
-        <button type="submit" className="primary loginButton">Sign in</button>
+        <button type="submit" className="primary loginButton">로그인</button>
         <small>
-          Configure credentials with <code>APP_LOGIN_EMAIL</code> and <code>APP_LOGIN_PASSWORD</code>.
+          계정은 <code>APP_LOGIN_EMAIL</code>과 <code>APP_LOGIN_PASSWORD</code>로 설정합니다.
         </small>
       </form>
     </main>
@@ -328,10 +328,10 @@ function formatLegalBasis(results) {
   if (!results.length) return '[]';
   return results
     .map((result) => {
-      const source = result.target === 'law' ? 'Current law' : result.target === 'expc' ? 'Interpretation' : 'Case law';
+      const source = result.target === 'law' ? '현행법령' : result.target === 'expc' ? '유권해석' : '판례';
       const date = result.date ? ` · ${result.date}` : '';
       const summary = result.summary ? `\n${result.summary.slice(0, 180)}${result.summary.length > 180 ? '...' : ''}` : '';
-      return `[${source}] ${result.title || 'Untitled'}${date}${summary}`;
+      return `[${source}] ${result.title || '제목 없음'}${date}${summary}`;
     })
     .join('\n\n');
 }
@@ -339,15 +339,15 @@ function formatLegalBasis(results) {
 function withLegalBasis(row, result) {
   const formattedBasis = formatLegalBasis(result.legalBasis);
   const nextReason = result.legalBasis.length
-    ? `${row['법 기준 사유'] || ''}\n\n[Related law / interpretation / case search results]\n${formattedBasis}`.trim()
-    : `${row['법 기준 사유'] || ''}\n\n[Related law / interpretation / case search results]\nLegal basis: []`.trim();
+    ? `${row['법 기준 사유'] || ''}\n\n[관련 법령/유권해석/판례 검색 결과]\n${formattedBasis}`.trim()
+    : `${row['법 기준 사유'] || ''}\n\n[관련 법령/유권해석/판례 검색 결과]\n법령근거: []`.trim();
 
   return {
     ...row,
     판정: result.errors.length ? '검토필요' : row['판정'],
     법령근거: result.legalBasis.length ? formattedBasis : row['법령근거'] || '[]',
     주의: result.errors.length
-      ? 'Some legal search API calls failed. Keep as Needs review and check source evidence.'
+      ? '법령 검색 API 일부가 실패했습니다. 검토필요로 유지하고 원본 증빙을 확인하세요.'
       : row['주의'],
     '법 기준 사유': nextReason,
   };
@@ -382,9 +382,9 @@ function parseWorkbook(arrayBuffer, fileName, articleReferences = {}) {
     rows: shapedRows,
     isResultExport,
     warning: isResultExport
-      ? 'This file appears to be an exported result file. Upload the original WEHAGO/voucher Excel file for an accurate re-check.'
+      ? '이 파일은 앱에서 다운로드한 결과 파일로 보입니다. 정확한 재판정을 위해 원본 WEHAGO/전표 엑셀 파일을 업로드하세요.'
       : '',
-    preview: `File: ${fileName}\nSheet: ${sheetName}\nHeader row: ${headerIndex + 1}\n\n${isResultExport ? '[Warning]\nThis looks like an exported result file from this app. Upload the original WEHAGO/voucher Excel file for an accurate re-check.\n\n' : ''}[Column mapping]\n${mappingPreview || 'Auto mapping failed. Falling back to default order.'}\n\n[Raw data preview]\n${previewRows}`,
+    preview: `파일명: ${fileName}\n시트: ${sheetName}\n헤더 행: ${headerIndex + 1}\n\n${isResultExport ? '[주의]\n이 파일은 앱에서 다운로드한 결과 파일로 보입니다. 정확한 재판정을 위해 원본 WEHAGO/전표 엑셀 파일을 업로드하세요.\n\n' : ''}[컬럼 매핑]\n${mappingPreview || '자동 매핑에 실패하여 기본 순서로 처리합니다.'}\n\n[원본 데이터 미리보기]\n${previewRows}`,
   };
 }
 
@@ -439,13 +439,13 @@ function fallbackRowsFromText(text) {
       confidence: 30,
       reason: FALLBACK_REVIEW_REASON,
       evidenceKeywords: [],
-      warning: 'Low OCR confidence. Final confirmation is required.',
+      warning: 'OCR 인식 정확도가 낮아 최종 확인이 필요합니다.',
       판정: '검토필요',
       신뢰도: '30%',
-      근거조항: 'VAT Act Articles 38 and 39',
+      근거조항: '부가가치세법 제38조 및 제39조',
       근거키워드: '',
-      주의: 'Low OCR confidence. Final confirmation is required.',
-      '법 기준 사유': `Evidence keywords: -\nConfidence: 30%\nLegal clause: VAT Act Articles 38 and 39\nWarning: Low OCR confidence. Final confirmation is required.\n${FALLBACK_REVIEW_REASON}`,
+      주의: 'OCR 인식 정확도가 낮아 최종 확인이 필요합니다.',
+      '법 기준 사유': `판정 근거 키워드: -\n신뢰도: 30%\n근거 조항: 부가가치세법 제38조 및 제39조\n주의: OCR 인식 정확도가 낮아 최종 확인이 필요합니다.\n${FALLBACK_REVIEW_REASON}`,
     };
     return {
       ...row,
@@ -507,9 +507,9 @@ function App() {
   const [imageUrl, setImageUrl] = useState('');
   const [rows, setRows] = useState([]);
   const [previewText, setPreviewText] = useState('');
-  const [status, setStatus] = useState('Waiting');
-  const [lawStatus, setLawStatus] = useState('Checking VAT Act');
-  const [ruleStatus, setRuleStatus] = useState('Rule engine ready');
+  const [status, setStatus] = useState('업로드 대기');
+  const [lawStatus, setLawStatus] = useState('부가가치세법 확인 중');
+  const [ruleStatus, setRuleStatus] = useState('판정 룰 준비 완료');
   const [lawInfo, setLawInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [legalBasisLoadingId, setLegalBasisLoadingId] = useState('');
@@ -533,7 +533,7 @@ function App() {
         const vatAct = await fetchVatAct();
         if (cancelled) return;
         setLawInfo(vatAct);
-        setLawStatus(`${vatAct.title || 'VAT Act'} text connected · Articles 26/38/39 checked`);
+        setLawStatus(`${vatAct.title || '부가가치세법'} 본문 연결 완료 · 제26조/제38조/제39조 확인`);
         setRows((currentRows) =>
           currentRows.map(({ id, 사유, decision, confidence, reason, evidenceKeywords, warning, legalBasis, 판정, 신뢰도, 근거조항, 근거키워드, 주의, 법령근거, '법 기준 사유': legalReason, ...baseRow }) => {
             const judgement = judgeVat(baseRow, vatAct.articleReferences);
@@ -547,7 +547,7 @@ function App() {
         );
       } catch (error) {
         if (cancelled) return;
-        setLawStatus(`Law text connection failed: ${error?.message ?? error} · default clauses are still shown`);
+        setLawStatus(`법령 본문 연결 실패: ${error?.message ?? error} · 기본 조항은 계속 표시됩니다`);
       }
     }
 
@@ -570,8 +570,8 @@ function App() {
     setImageUrl('');
     setRows([]);
     setPreviewText('');
-    setStatus('Waiting');
-    setRuleStatus('Rule engine ready');
+    setStatus('업로드 대기');
+    setRuleStatus('판정 룰 준비 완료');
   }
 
   async function handleSpreadsheet(file) {
@@ -580,8 +580,8 @@ function App() {
     setImageUrl('');
     setRows([]);
     setPreviewText('');
-    setStatus('Analyzing file');
-    setRuleStatus('Applying rules');
+    setStatus('파일 분석 중');
+    setRuleStatus('판정 룰 적용 중');
     setIsProcessing(true);
 
     try {
@@ -589,11 +589,11 @@ function App() {
       const parsed = parseWorkbook(arrayBuffer, file.name, lawInfo?.articleReferences ?? {});
       setRows(parsed.rows);
       setPreviewText(parsed.preview);
-      setStatus(parsed.isResultExport ? 'Result file re-upload detected' : 'Excel analysis complete');
-      setRuleStatus(`Rules applied · ${parsed.rows.length.toLocaleString()} rows`);
+      setStatus(parsed.isResultExport ? '결과 파일 재업로드 감지' : '엑셀 분석 완료');
+      setRuleStatus(`판정 룰 적용 완료 · ${parsed.rows.length.toLocaleString()}건`);
     } catch (error) {
-      setStatus('File analysis failed');
-      setRuleStatus('Rule application failed');
+      setStatus('파일 분석 실패');
+      setRuleStatus('판정 룰 적용 실패');
       setPreviewText(String(error?.message ?? error));
       console.error(error);
     } finally {
@@ -607,8 +607,8 @@ function App() {
     setImageUrl(URL.createObjectURL(file));
     setRows([]);
     setPreviewText('');
-    setStatus('Auxiliary OCR running');
-    setRuleStatus('Applying rules');
+    setStatus('보조 OCR 실행 중');
+    setRuleStatus('판정 룰 적용 중');
     setIsProcessing(true);
 
     try {
@@ -618,11 +618,11 @@ function App() {
       const parsedRows = parseOcrText(text, lawInfo?.articleReferences ?? {});
       setPreviewText(text);
       setRows(parsedRows);
-      setStatus(parsedRows.length ? `OCR candidates: ${parsedRows.length} / Needs review` : 'OCR candidates: 0');
-      setRuleStatus(`Rules applied · ${parsedRows.length.toLocaleString()} rows`);
+      setStatus(parsedRows.length ? `거래 후보 ${parsedRows.length}건 / 검토필요` : '거래 후보 0건');
+      setRuleStatus(`판정 룰 적용 완료 · ${parsedRows.length.toLocaleString()}건`);
     } catch (error) {
-      setStatus('OCR failed');
-      setRuleStatus('Rule application failed');
+      setStatus('OCR 실패');
+      setRuleStatus('판정 룰 적용 실패');
       setPreviewText(String(error?.message ?? error));
       console.error(error);
     } finally {
@@ -660,7 +660,7 @@ function App() {
     );
     const worksheet = XLSX.utils.json_to_sheet(data, { header: RESULT_COLUMNS.map((column) => LABELS[column] || column) });
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'VAT Decision');
+    XLSX.utils.book_append_sheet(workbook, worksheet, '매입세액 판정');
     XLSX.writeFile(workbook, `wehago-vat-result-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
@@ -737,13 +737,13 @@ function App() {
     ];
     const worksheet = XLSX.utils.json_to_sheet(sampleRows, { header: COLUMNS });
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Upload Sample');
+    XLSX.utils.book_append_sheet(workbook, worksheet, '업로드 예시');
     XLSX.writeFile(workbook, 'wehago-vat-upload-sample.xlsx');
   }
 
   async function showLegalBasis(row) {
     setLegalBasisLoadingId(row.id);
-    const reason = buildBasisReason(row) || 'VAT input tax deduction non-deduction';
+    const reason = buildBasisReason(row) || '부가가치세 매입세액 공제 불공제';
 
     try {
       const result = await findVoucherLegalBasis(reason);
@@ -760,8 +760,8 @@ function App() {
                 ...currentRow,
                 판정: '검토필요',
                 법령근거: '[]',
-                주의: 'Legal search API failed. Keep as Needs review and check source evidence.',
-                '법 기준 사유': `${currentRow['법 기준 사유'] || ''}\n\nLegal basis: []\n${error?.message ?? error}`.trim(),
+                주의: '법령 검색 API가 실패했습니다. 검토필요로 유지하고 원본 증빙을 확인하세요.',
+                '법 기준 사유': `${currentRow['법 기준 사유'] || ''}\n\n법령근거: []\n${error?.message ?? error}`.trim(),
               }
             : currentRow,
         ),
@@ -774,13 +774,13 @@ function App() {
   async function showAllLegalBasis() {
     if (!rows.length || bulkBasisStatus) return;
 
-    setBulkBasisStatus('Preparing bulk legal search');
+    setBulkBasisStatus('전체 법령근거 조회 준비 중');
     const cache = new Map();
     const nextRows = [];
 
     for (let index = 0; index < rows.length; index += 1) {
       const row = rows[index];
-      const reason = buildBasisReason(row) || 'VAT input tax deduction non-deduction';
+      const reason = buildBasisReason(row) || '부가가치세 매입세액 공제 불공제';
       const cacheKey = [
         normalizeDecision(row['판정']),
         row['근거조항'],
@@ -793,7 +793,7 @@ function App() {
         .map(normalizeText)
         .join('|');
 
-      setBulkBasisStatus(`Searching legal basis ${index + 1}/${rows.length}`);
+      setBulkBasisStatus(`법령근거 조회 중 ${index + 1}/${rows.length}`);
 
       try {
         if (!cache.has(cacheKey)) {
@@ -805,8 +805,8 @@ function App() {
           ...row,
           판정: '검토필요',
           법령근거: '[]',
-          주의: 'Legal search API failed. Keep as Needs review and check source evidence.',
-          '법 기준 사유': `${row['법 기준 사유'] || ''}\n\nLegal basis: []\n${error?.message ?? error}`.trim(),
+          주의: '법령 검색 API가 실패했습니다. 검토필요로 유지하고 원본 증빙을 확인하세요.',
+          '법 기준 사유': `${row['법 기준 사유'] || ''}\n\n법령근거: []\n${error?.message ?? error}`.trim(),
         });
       }
     }
@@ -823,24 +823,24 @@ function App() {
     <main className="app">
       <section className="topbar">
         <div>
-          <p className="eyebrow">WEHAGO Credit Card Purchases</p>
-          <h1>Input VAT Deduction Review</h1>
+          <p className="eyebrow">WEHAGO 신용카드 매입</p>
+          <h1>매입세액 공제 판정</h1>
         </div>
         <div className="actions">
-          <button type="button" className="iconButton" onClick={() => excelInputRef.current?.click()} title="Upload Excel/CSV">
+          <button type="button" className="iconButton" onClick={() => excelInputRef.current?.click()} title="Excel/CSV 업로드">
             <Upload size={18} />
           </button>
-          <button type="button" className="secondaryButton" onClick={downloadSampleExcel} title="Download sample Excel">
+          <button type="button" className="secondaryButton" onClick={downloadSampleExcel} title="예시 Excel 다운로드">
             <Download size={18} />
-            Sample Excel
+            예시 Excel
           </button>
-          <button type="button" className="primary" onClick={downloadExcel} disabled={!rows.length} title="Download result Excel">
+          <button type="button" className="primary" onClick={downloadExcel} disabled={!rows.length} title="결과 Excel 다운로드">
             <Download size={18} />
-            Result Excel
+            결과 Excel
           </button>
           {APP_ENABLE_LOGIN ? (
-            <button type="button" className="secondaryButton" onClick={handleLogout} title="Sign out">
-              Sign out
+            <button type="button" className="secondaryButton" onClick={handleLogout} title="로그아웃">
+              로그아웃
             </button>
           ) : null}
         </div>
@@ -874,7 +874,7 @@ function App() {
             }}
           >
             <FileSpreadsheet size={44} />
-            <span>{fileName || 'Upload Excel/CSV file'}</span>
+            <span>{fileName || 'Excel/CSV 파일 업로드'}</span>
             <small>.xlsx, .xls, .csv</small>
           </button>
 
@@ -883,65 +883,63 @@ function App() {
               {isProcessing ? <RefreshCw className="spin" size={18} /> : <FileSpreadsheet size={18} />}
               <strong>{status}</strong>
             </div>
-            <span className="progressText">{isProcessing ? 'Analyzing file' : rows.length ? 'Analysis complete' : 'Waiting for upload'}</span>
+            <span className="progressText">{isProcessing ? '파일 분석 중' : rows.length ? '분석 완료' : '업로드 대기'}</span>
           </div>
 
           <div className="summaryGrid">
-            <div><Check size={16} /><span>Deductible</span><strong>{summary['공제'] || 0}</strong></div>
-            <div><X size={16} /><span>Non-deductible</span><strong>{summary['불공제'] || 0}</strong></div>
-            <div><AlertCircle size={16} /><span>Needs review</span><strong>{summary['검토필요'] || 0}</strong></div>
+            <div><Check size={16} /><span>공제</span><strong>{summary['공제'] || 0}</strong></div>
+            <div><X size={16} /><span>불공제</span><strong>{summary['불공제'] || 0}</strong></div>
+            <div><AlertCircle size={16} /><span>검토필요</span><strong>{summary['검토필요'] || 0}</strong></div>
           </div>
 
           <div className="lawStatus">
-            <strong>Legal Basis</strong>
+            <strong>법령 기준</strong>
             <span>{lawStatus}</span>
             {lawInfo ? (
               <>
                 <small>
-                  Reference law: {lawInfo.title || 'VAT Act'}
+                  참고 법률: {lawInfo.title || '부가가치세법'}
                   <br />
-                  Law ID {lawInfo.lawId || '-'} · Serial No. {lawInfo.mst || '-'}
+                  법령ID {lawInfo.lawId || '-'} · 법령일련번호 {lawInfo.mst || '-'}
                   <br />
-                  Effective date {lawInfo.enforcementDate || '-'} · Promulgation date {lawInfo.promulgationDate || '-'}
+                  시행일자 {lawInfo.enforcementDate || '-'} · 공포일자 {lawInfo.promulgationDate || '-'}
                   <br />
-                  Ministry {lawInfo.ministry || '-'}
+                  소관부처 {lawInfo.ministry || '-'}
                   <br />
-                  Checked articles {Object.values(lawInfo.articleReferences ?? {}).map((article) => article.label).join(', ') || '-'}
+                  원문 확인 조항 {Object.values(lawInfo.articleReferences ?? {}).map((article) => article.label).join(', ') || '-'}
                 </small>
                 <p>
-                  The app searches for the VAT Act, loads the selected law text, and uses it only to show supporting
-                  legal clauses. The actual decision is still made by the rule engine.
+                  부가가치세법 본문은 근거 조항 표시용으로 사용합니다. 실제 공제/불공제/검토필요 판정은 판정 룰 엔진이 수행합니다.
                 </p>
               </>
             ) : null}
           </div>
 
           <div className="ruleStatus">
-            <strong>Rule Engine</strong>
+            <strong>판정 룰</strong>
             <span>{ruleStatus}</span>
             <p>
-              Deductible, non-deductible, and needs-review decisions are made by keyword-based rules. The rules keep
-              working even if the legal text API fails.
+              공제, 불공제, 검토필요 판정은 rules.js의 키워드 기반 룰로 수행합니다. 법령 API가 실패해도 판정 룰은 계속 작동합니다.
             </p>
           </div>
 
           <div className="secondaryUpload">
             <div>
-              <strong>Auxiliary OCR</strong>
-              <span>Use only when you have a screenshot</span>
+              <strong>보조 OCR</strong>
+              <span>스크린샷만 있을 때 사용</span>
             </div>
             <button type="button" onClick={() => ocrInputRef.current?.click()}>
               <FileImage size={16} />
               PNG/JPG
             </button>
-            {imageUrl ? <img src={imageUrl} alt="Uploaded screenshot preview" /> : null}
+            {imageUrl ? <img src={imageUrl} alt="업로드한 스크린샷 미리보기" /> : null}
           </div>
 
           <details className="ocrText">
-            <summary>Raw Data Preview</summary>
+            <summary>원본 데이터 미리보기</summary>
             <pre>
-              {previewText || 'After upload, part of the raw data will appear here.'}
-              {lawInfo ? `\n\n[Legal API]\nReference law: ${lawInfo.title}\nLaw ID: ${lawInfo.lawId || '-'}\nSerial No.: ${lawInfo.mst || '-'}\nEffective date: ${lawInfo.enforcementDate || '-'}\nPromulgation date: ${lawInfo.promulgationDate || '-'}\nMinistry: ${lawInfo.ministry || '-'}` : ''}
+              {previewText || '업로드 후 원본 데이터 일부가 여기에 표시됩니다.'}
+              {lawInfo ? `\n\n[법령 API]\n참고 법률: ${lawInfo.title}\n법령ID: ${lawInfo.lawId || '-'}\n법령일련번호: ${lawInfo.mst || '-'}\n시행일자: ${lawInfo.enforcementDate || '-'}\n공포일자: ${lawInfo.promulgationDate || '-'}\n소관부처: ${lawInfo.ministry || '-'}` : ''}
             </pre>
           </details>
         </aside>
@@ -949,15 +947,15 @@ function App() {
         <section className="tablePanel">
           <div className="tableToolbar">
             <div>
-              <strong>{rows.length.toLocaleString()} rows</strong>
-              <span>reviewed transactions</span>
+              <strong>{rows.length.toLocaleString()}건</strong>
+              <span>판정된 거래</span>
               {bulkBasisStatus ? <span>{bulkBasisStatus}</span> : null}
             </div>
             <div className="toolbarActions">
               <button type="button" onClick={showAllLegalBasis} disabled={!rows.length || !!bulkBasisStatus}>
-                {bulkBasisStatus ? 'Searching' : 'Search all legal basis'}
+                {bulkBasisStatus ? '조회 중' : '전체 근거 조회'}
               </button>
-              <button type="button" onClick={addEmptyRow}>Add row</button>
+              <button type="button" onClick={addEmptyRow}>행 추가</button>
             </div>
           </div>
 
@@ -1019,9 +1017,9 @@ function App() {
                           className="miniButton"
                           onClick={() => showLegalBasis(row)}
                           disabled={legalBasisLoadingId === row.id}
-                          title="Search related laws, interpretations, and cases"
+                          title="관련 법령, 유권해석, 판례 검색"
                         >
-                          {legalBasisLoadingId === row.id ? 'Searching' : 'Search more'}
+                          {legalBasisLoadingId === row.id ? '조회 중' : '근거 조회'}
                         </button>
                         <textarea
                           value={row['법령근거'] ?? '[]'}
@@ -1039,7 +1037,7 @@ function App() {
                 )) : (
                   <tr>
                     <td className="emptyState" colSpan={RESULT_COLUMNS.length}>
-                      Upload an Excel or CSV file to see input VAT deduction results.
+                      Excel 또는 CSV 파일을 업로드하면 매입세액 공제 판정 결과가 표시됩니다.
                     </td>
                   </tr>
                 )}

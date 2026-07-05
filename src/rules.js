@@ -78,14 +78,14 @@ const REVIEW_KEYWORDS = [
   '여행',
 ];
 const WEAK_PAYMENT_KEYWORDS = ['현금', '카드', '보통예금', '미지급금'];
-const LEGAL_PREFIX = 'Under the Korean VAT Act, input VAT is deductible when the purchase is a taxable business-related purchase and no non-deductible reason applies.';
+const LEGAL_PREFIX = '부가가치세법상 매입세액 공제는 사업 관련 과세매입이고 불공제 사유가 없는 경우 인정됩니다.';
 const LEGAL_BASIS = {
-  generalTaxablePurchase: { label: 'VAT Act Articles 38 and 39', articles: ['article38', 'article39'] },
-  nonDeductible: { label: 'VAT Act Article 39(1)', articles: ['article39'] },
-  vehicle: { label: 'VAT Act Article 39(1)', articles: ['article39'] },
-  taxExempt: { label: 'VAT Act Articles 26 and 39', articles: ['article26', 'article39'] },
-  unrelatedBusiness: { label: 'VAT Act Article 39', articles: ['article39'] },
-  review: { label: 'VAT Act Articles 38 and 39', articles: ['article38', 'article39'] },
+  generalTaxablePurchase: { label: '부가가치세법 제38조 및 제39조', articles: ['article38', 'article39'] },
+  nonDeductible: { label: '부가가치세법 제39조 제1항', articles: ['article39'] },
+  vehicle: { label: '부가가치세법 제39조 제1항', articles: ['article39'] },
+  taxExempt: { label: '부가가치세법 제26조 및 제39조', articles: ['article26', 'article39'] },
+  unrelatedBusiness: { label: '부가가치세법 제39조', articles: ['article39'] },
+  review: { label: '부가가치세법 제38조 및 제39조', articles: ['article38', 'article39'] },
 };
 
 export function normalizeText(value) {
@@ -120,7 +120,7 @@ function buildWarning(row, hasNts) {
     normalizeText(row['업태']) || normalizeText(row['종목']) ? '' : '업태/종목',
   ].filter(Boolean);
 
-  return missing.length ? `Missing ${missing.join('/')} information. Final confirmation is required.` : '';
+  return missing.length ? `${missing.join('/')} 정보가 부족하여 최종 확인이 필요합니다.` : '';
 }
 
 function buildLegalBasis(legalBasisKey, articleReferences = {}) {
@@ -135,16 +135,16 @@ function buildLegalBasis(legalBasisKey, articleReferences = {}) {
 
   return {
     label: basis.label,
-    line: excerpts.length ? `Law text checked: ${excerpts.join(' / ')}` : '',
+    line: excerpts.length ? `법령 원문 확인: ${excerpts.join(' / ')}` : '',
   };
 }
 
 function result(decision, confidence, reason, evidenceKeywords, warning = '', legalBasisKey = 'review', articleReferences = {}) {
   const legalBasis = buildLegalBasis(legalBasisKey, articleReferences);
-  const evidenceLine = evidenceKeywords.length ? `Evidence keywords: ${evidenceKeywords.join(', ')}` : 'Evidence keywords: -';
-  const warningLine = warning ? `Warning: ${warning}` : '';
-  const confidenceLine = `Confidence: ${confidence}%`;
-  const legalBasisLine = `Legal clause: ${legalBasis.label}`;
+  const evidenceLine = evidenceKeywords.length ? `판정 근거 키워드: ${evidenceKeywords.join(', ')}` : '판정 근거 키워드: -';
+  const warningLine = warning ? `주의: ${warning}` : '';
+  const confidenceLine = `신뢰도: ${confidence}%`;
+  const legalBasisLine = `근거 조항: ${legalBasis.label}`;
 
   return {
     decision,
@@ -180,9 +180,9 @@ export function judgeVat(row, articleReferences = {}) {
       '불공제',
       95,
       taxExempt.length
-        ? `Tax-exempt goods or services generally do not generate deductible input VAT. The NTS status is also ${ntsStatus}, so this is classified as non-deductible.`
-        : `${LEGAL_PREFIX} The NTS status is ${ntsStatus}, so excluding this input VAT from deduction is reasonable.`,
-      [`NTS ${ntsStatus}`, ...taxExempt, ...nonDeductible],
+        ? `면세 재화 또는 용역은 일반적으로 공제받을 매입세액이 발생하지 않습니다. 국세청 공제구분도 ${ntsStatus}로 확인되어 불공제로 판정했습니다.`
+        : `${LEGAL_PREFIX} 국세청 공제구분이 ${ntsStatus}로 확인되어 매입세액을 불공제로 처리하는 것이 합리적입니다.`,
+      [`국세청 ${ntsStatus}`, ...taxExempt, ...nonDeductible],
       warning,
       taxExempt.length ? 'taxExempt' : 'nonDeductible',
       articleReferences,
@@ -193,9 +193,9 @@ export function judgeVat(row, articleReferences = {}) {
     return result(
       '불공제',
       hasNts ? 92 : 78,
-      `Tax-exempt goods or services generally do not generate deductible input VAT. The keywords ${taxExempt.join(', ')} suggest a likely tax-exempt transaction, so this is estimated as non-deductible. Confirm whether a taxable invoice was issued or whether the item was actually taxable.`,
+      `면세 재화 또는 용역은 일반적으로 공제받을 매입세액이 발생하지 않습니다. ${taxExempt.join(', ')} 키워드가 면세 거래 가능성을 강하게 보여 불공제로 추정했습니다. 실제 과세 세금계산서 발급 여부와 품목의 과세 여부는 증빙으로 확인하세요.`,
       taxExempt,
-      warning || 'Confirm tax-exempt status and VAT amount on the source document.',
+      warning || '원본 증빙에서 면세 여부와 세액 기재 여부를 확인하세요.',
       'taxExempt',
       articleReferences,
     );
@@ -205,9 +205,9 @@ export function judgeVat(row, articleReferences = {}) {
     return result(
       '불공제',
       hasNts ? 90 : 72,
-      `${LEGAL_PREFIX} The keywords ${nonDeductible.join(', ')} indicate entertainment, private spending, penalties, dues, or similar non-deductible characteristics. ${hasNts ? 'The NTS value was also considered.' : 'This is an estimated decision, so source evidence should be checked.'}`,
+      `${LEGAL_PREFIX} ${nonDeductible.join(', ')} 키워드는 접대성 지출, 사적 지출, 벌과금, 공과금 등 불공제 성격을 나타냅니다. ${hasNts ? '국세청 공제구분도 함께 고려했습니다.' : '추정 판정이므로 원본 증빙과 실제 사용 목적을 확인하세요.'}`,
       nonDeductible,
-      warning || 'Estimated decision. Check actual business purpose and supporting evidence.',
+      warning || '추정 판정입니다. 실제 사용 목적과 증빙을 확인하세요.',
       'nonDeductible',
       articleReferences,
     );
@@ -217,8 +217,8 @@ export function judgeVat(row, articleReferences = {}) {
     return result(
       '공제',
       88,
-      `${LEGAL_PREFIX} The NTS status is deductible and no risk keywords were found, so this is classified as deductible.`,
-      ['NTS deductible', ...deductible],
+      `${LEGAL_PREFIX} 국세청 공제구분이 공제이고 위험 키워드가 발견되지 않아 공제로 판정했습니다.`,
+      ['국세청 공제', ...deductible],
       warning,
       'generalTaxablePurchase',
       articleReferences,
@@ -229,9 +229,9 @@ export function judgeVat(row, articleReferences = {}) {
     return result(
       '검토필요',
       hasNts ? 78 : 60,
-      `${LEGAL_PREFIX} The keywords ${review.join(', ')} can include either business expenses or entertainment/private expenses. Check the actual purpose of use. This is an estimated decision.`,
+      `${LEGAL_PREFIX} ${review.join(', ')} 키워드는 업무 관련 비용일 수도 있지만 접대성, 사적 사용, 차량 용도 등 추가 확인이 필요한 성격도 포함할 수 있습니다. 실제 사용 목적을 확인해야 하므로 검토필요로 판정했습니다.`,
       review,
-      warning || 'Check purpose of use, attendees, vehicle use, or other supporting details.',
+      warning || '사용 목적, 참석자, 차량 용도 등 추가 증빙을 확인하세요.',
       review.some((keyword) => ['주유', '차량', '자동차', '렌트', '리스', '주차', '톨게이트'].includes(keyword))
         ? 'vehicle'
         : 'review',
@@ -245,8 +245,8 @@ export function judgeVat(row, articleReferences = {}) {
       '공제',
       hasInventory && !hasNts ? 65 : 72,
       hasInventory
-        ? `${LEGAL_PREFIX} Inventory or purchase-related account keywords suggest a taxable business purchase. If NTS status or VAT amount is missing, verify the supporting document. This is an estimated decision.`
-        : `${LEGAL_PREFIX} The keywords ${deductible.join(', ')} suggest an ordinary taxable business operating expense. This is an estimated decision.`,
+        ? `${LEGAL_PREFIX} 상품, 원재료, 매입 등 재고 또는 매입 성격의 계정 키워드가 있어 사업 관련 과세매입 가능성이 있습니다. 국세청 공제구분 또는 세액 정보가 부족하면 증빙을 확인하세요. 추정 판정입니다.`
+        : `${LEGAL_PREFIX} ${deductible.join(', ')} 키워드는 통상적인 사업 운영비 성격으로 보여 공제 가능성이 높습니다. 추정 판정입니다.`,
       deductible,
       warning,
       'generalTaxablePurchase',
@@ -258,9 +258,9 @@ export function judgeVat(row, articleReferences = {}) {
     return result(
       '검토필요',
       35,
-      `${LEGAL_PREFIX} ${weakPayments.join(', ')} are payment or settlement terms, so they are weak evidence for deciding deductibility. Check item, account, or business type to understand the transaction.`,
+      `${LEGAL_PREFIX} ${weakPayments.join(', ')}는 결제수단 또는 정산 계정에 가까워 공제 여부를 판단하는 근거로는 약합니다. 품명, 계정과목, 업태/종목을 확인해야 거래 성격을 알 수 있습니다.`,
       weakPayments,
-      warning || 'Payment method alone is not enough to decide.',
+      warning || '결제수단만으로는 공제 여부를 판단하기 어렵습니다.',
       'review',
       articleReferences,
     );
@@ -269,9 +269,9 @@ export function judgeVat(row, articleReferences = {}) {
   return result(
     '검토필요',
     40,
-    `${LEGAL_PREFIX} The remaining words are not enough to estimate deductibility or non-deductibility with confidence.`,
+    `${LEGAL_PREFIX} 남아 있는 단어만으로는 공제 또는 불공제를 충분한 확신으로 추정하기 어렵습니다.`,
     [],
-    warning || 'Check NTS status, item, account, or business type.',
+    warning || '국세청 공제구분, 품명, 계정과목, 업태/종목을 확인하세요.',
     'review',
     articleReferences,
   );
