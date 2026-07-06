@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AlertCircle, Check, Download, FileImage, FileSpreadsheet, LockKeyhole, Mail, RefreshCw, Upload, X } from 'lucide-react';
+import { AlertCircle, Check, Download, FileImage, FileSpreadsheet, LockKeyhole, Mail, RefreshCw, Upload, User, X } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import * as XLSX from 'xlsx';
 import { fetchVatAct } from './lawApi';
@@ -411,55 +411,67 @@ function SignupScreen({ onSignupComplete, onBack }) {
         </div>
         <label>
           이름
-          <input
-            autoComplete="name"
-            value={name}
-            onChange={(event) => {
-              setName(event.target.value);
-              setError('');
-            }}
-            placeholder="홍길동"
-            type="text"
-          />
+          <div className="authInput">
+            <User size={22} />
+            <input
+              autoComplete="name"
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                setError('');
+              }}
+              placeholder="홍길동"
+              type="text"
+            />
+          </div>
         </label>
         <label>
           이메일
-          <input
-            autoComplete="email"
-            value={email}
-            onChange={(event) => {
-              setEmail(event.target.value);
-              setError('');
-            }}
-            placeholder="user@example.com"
-            type="email"
-          />
+          <div className="authInput">
+            <Mail size={22} />
+            <input
+              autoComplete="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setError('');
+              }}
+              placeholder="user@example.com"
+              type="email"
+            />
+          </div>
         </label>
         <label>
           비밀번호
-          <input
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => {
-              setPassword(event.target.value);
-              setError('');
-            }}
-            placeholder="6자 이상"
-            type="password"
-          />
+          <div className="authInput">
+            <LockKeyhole size={22} />
+            <input
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setError('');
+              }}
+              placeholder="6자 이상"
+              type="password"
+            />
+          </div>
         </label>
         <label>
           비밀번호 확인
-          <input
-            autoComplete="new-password"
-            value={passwordConfirm}
-            onChange={(event) => {
-              setPasswordConfirm(event.target.value);
-              setError('');
-            }}
-            placeholder="비밀번호 재입력"
-            type="password"
-          />
+          <div className="authInput">
+            <LockKeyhole size={22} />
+            <input
+              autoComplete="new-password"
+              value={passwordConfirm}
+              onChange={(event) => {
+                setPasswordConfirm(event.target.value);
+                setError('');
+              }}
+              placeholder="비밀번호 재입력"
+              type="password"
+            />
+          </div>
         </label>
         {error ? <p className="loginError">{error}</p> : null}
         <button type="submit" className="primary loginButton">가입하고 시작</button>
