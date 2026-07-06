@@ -34,12 +34,12 @@ button {
   background: #f2f4ff;
   display: grid;
   min-height: 100vh;
-  padding: 38px 18px;
+  padding: 52px 18px 38px;
 }
 
 .authShell {
   display: grid;
-  gap: 18px;
+  gap: 24px;
   justify-items: center;
   margin: 0 auto;
   max-width: 560px;
@@ -149,44 +149,6 @@ button {
   font-weight: 700;
   justify-self: end;
   padding: 0;
-}
-
-.authDivider {
-  align-items: center;
-  color: #778191;
-  display: grid;
-  font-weight: 700;
-  gap: 14px;
-  grid-template-columns: 1fr auto 1fr;
-  margin: 2px 0;
-}
-
-.authDivider::before,
-.authDivider::after {
-  background: #d6dbe5;
-  content: "";
-  height: 1px;
-}
-
-.googleButton {
-  align-items: center;
-  background: #fff;
-  border: 2px solid #d2d7df;
-  border-radius: 12px;
-  color: #3f4858;
-  display: inline-flex;
-  font-size: 17px;
-  font-weight: 900;
-  gap: 12px;
-  justify-content: center;
-  min-height: 52px;
-  width: 100%;
-}
-
-.googleButton span {
-  color: #4285f4;
-  font-size: 20px;
-  font-weight: 900;
 }
 
 .authSwitch {
@@ -685,7 +647,6 @@ td textarea {
   }
 
   .authInput,
-  .googleButton,
   .loginButton {
     min-height: 56px;
   }

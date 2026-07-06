@@ -340,11 +340,6 @@ function LoginScreen({ onLogin, onCancel, onSignup }) {
         </button>
         {error ? <p className="loginError">{error}</p> : null}
         <button type="submit" className="primary loginButton">로그인</button>
-        <div className="authDivider"><span>또는</span></div>
-        <button type="button" className="googleButton" onClick={() => setError('Google 로그인은 아직 연결되지 않았습니다.')}>
-          <span aria-hidden="true">G</span>
-          Google로 로그인
-        </button>
         <p className="authSwitch">
           아직 계정이 없으신가요?
           <button type="button" onClick={onSignup}>회원가입</button>
