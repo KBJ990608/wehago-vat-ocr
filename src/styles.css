@@ -448,11 +448,25 @@ h1 {
 }
 
 .summaryPill {
+  appearance: none;
+  border: 2px solid transparent;
   border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
   font-size: 12px;
   font-weight: 900;
   line-height: 1;
   padding: 6px 9px;
+}
+
+.summaryPill.active {
+  border-color: currentColor;
+  box-shadow: 0 0 0 3px rgba(30, 99, 214, .12);
+}
+
+.summaryPill:focus-visible {
+  outline: 3px solid rgba(30, 99, 214, .28);
+  outline-offset: 2px;
 }
 
 .summaryPill.deductible {

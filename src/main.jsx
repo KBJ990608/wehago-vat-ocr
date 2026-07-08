@@ -694,6 +694,7 @@ function App() {
   const [rowReports, setRowReports] = useState({});
   const [reportDraft, setReportDraft] = useState({ rowId: '', reason: '' });
   const [authView, setAuthView] = useState('app');
+  const [decisionFilter, setDecisionFilter] = useState('');
   const excelInputRef = useRef(null);
   const ocrInputRef = useRef(null);
 
@@ -703,6 +704,11 @@ function App() {
       return acc;
     }, {});
   }, [rows]);
+
+  const visibleRows = useMemo(() => {
+    if (!decisionFilter) return rows;
+    return rows.filter((row) => normalizeDecision(row['판정']) === decisionFilter);
+  }, [decisionFilter, rows]);
 
   useEffect(() => {
     if (APP_ENABLE_LOGIN && !session) return undefined;
@@ -751,6 +757,7 @@ function App() {
     setRows([]);
     setRowReports({});
     setReportDraft({ rowId: '', reason: '' });
+    setDecisionFilter('');
     setPreviewText('');
     setStatus('업로드 대기');
   }
@@ -762,6 +769,7 @@ function App() {
     setRows([]);
     setRowReports({});
     setReportDraft({ rowId: '', reason: '' });
+    setDecisionFilter('');
     setPreviewText('');
     setStatus('파일 분석 중');
     setIsProcessing(true);
@@ -788,6 +796,7 @@ function App() {
     setRows([]);
     setRowReports({});
     setReportDraft({ rowId: '', reason: '' });
+    setDecisionFilter('');
     setPreviewText('');
     setStatus('보조 OCR 실행 중');
     setIsProcessing(true);
@@ -1104,14 +1113,35 @@ function App() {
         <section className="tablePanel">
           <div className="tableToolbar">
             <div className="toolbarTitle">
-              <strong>{rows.length.toLocaleString()}건</strong>
-              <span>판정된 거래</span>
+              <strong>{visibleRows.length.toLocaleString()}건</strong>
+              <span>{decisionFilter ? `${DECISION_LABELS[decisionFilter]} 표시` : '판정된 거래'}</span>
               <div className="toolbarSummary" aria-label="판정 요약">
-                <span className="summaryPill deductible">공제 {summary['공제'] || 0}</span>
+                <button
+                  type="button"
+                  className={`summaryPill deductible ${decisionFilter === '공제' ? 'active' : ''}`}
+                  onClick={() => setDecisionFilter((currentFilter) => (currentFilter === '공제' ? '' : '공제'))}
+                  aria-pressed={decisionFilter === '공제'}
+                >
+                  공제 {summary['공제'] || 0}
+                </button>
                 <span className="summaryDivider">/</span>
-                <span className="summaryPill nondeductible">불공제 {summary['불공제'] || 0}</span>
+                <button
+                  type="button"
+                  className={`summaryPill nondeductible ${decisionFilter === '불공제' ? 'active' : ''}`}
+                  onClick={() => setDecisionFilter((currentFilter) => (currentFilter === '불공제' ? '' : '불공제'))}
+                  aria-pressed={decisionFilter === '불공제'}
+                >
+                  불공제 {summary['불공제'] || 0}
+                </button>
                 <span className="summaryDivider">/</span>
-                <span className="summaryPill review">검토필요 {summary['검토필요'] || 0}</span>
+                <button
+                  type="button"
+                  className={`summaryPill review ${decisionFilter === '검토필요' ? 'active' : ''}`}
+                  onClick={() => setDecisionFilter((currentFilter) => (currentFilter === '검토필요' ? '' : '검토필요'))}
+                  aria-pressed={decisionFilter === '검토필요'}
+                >
+                  검토필요 {summary['검토필요'] || 0}
+                </button>
               </div>
             </div>
           </div>
@@ -1124,7 +1154,7 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {rows.length ? rows.map((row) => (
+                {visibleRows.length ? visibleRows.map((row) => (
                   <tr key={row.id}>
                     {COLUMNS.map((column) => (
                       <td key={column}>
@@ -1235,7 +1265,9 @@ function App() {
                 )) : (
                   <tr>
                     <td className="emptyState" colSpan={RESULT_COLUMNS.length}>
-                      Excel 또는 CSV 파일을 업로드하면 매입세액 공제 판정 결과가 표시됩니다.
+                      {rows.length && decisionFilter
+                        ? `${DECISION_LABELS[decisionFilter]} 항목이 없습니다.`
+                        : 'Excel 또는 CSV 파일을 업로드하면 매입세액 공제 판정 결과가 표시됩니다.'}
                     </td>
                   </tr>
                 )}
