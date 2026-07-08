@@ -1000,7 +1000,7 @@ function App() {
       <section className="topbar">
         <div>
           <p className="eyebrow">WEHAGO 신용카드 매입</p>
-          <h1>매입세액 공제 판정</h1>
+          <h1>신용카드 매입세액 판정기</h1>
         </div>
         <div className="actions">
           <button type="button" className="iconButton" onClick={() => excelInputRef.current?.click()} title="Excel/CSV 업로드">
@@ -1235,7 +1235,7 @@ function App() {
                     <td className="emptyState" colSpan={RESULT_COLUMNS.length}>
                       {rows.length && decisionFilter
                         ? `${DECISION_LABELS[decisionFilter]} 항목이 없습니다.`
-                        : 'Excel 또는 CSV 파일을 업로드하면 매입세액 공제 판정 결과가 표시됩니다.'}
+                        : 'Excel 또는 CSV 파일을 업로드하면 신용카드 매입세액 판정 결과가 표시됩니다.'}
                     </td>
                   </tr>
                 )}
