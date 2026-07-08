@@ -823,11 +823,6 @@ function App() {
     );
   }
 
-  function addEmptyRow() {
-    const base = Object.fromEntries(COLUMNS.map((column) => [column, '']));
-    setRows((currentRows) => [...currentRows, applyJudgement(base, lawInfo?.articleReferences ?? {})]);
-  }
-
   function openErrorReport(row) {
     setReportDraft({
       rowId: row.id,
@@ -1118,9 +1113,6 @@ function App() {
                 <span className="summaryDivider">/</span>
                 <span className="summaryPill review">검토필요 {summary['검토필요'] || 0}</span>
               </div>
-            </div>
-            <div className="toolbarActions">
-              <button type="button" onClick={addEmptyRow}>행 추가</button>
             </div>
           </div>
 
