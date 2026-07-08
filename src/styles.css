@@ -447,26 +447,36 @@ h1 {
   gap: 6px;
 }
 
+.decisionFilter {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.decisionFilter span {
+  color: #617285;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.decisionFilter select {
+  background: #fff;
+  border: 1px solid #c7d2df;
+  border-radius: 7px;
+  color: #1c2836;
+  font-size: 13px;
+  font-weight: 900;
+  min-height: 34px;
+  min-width: 110px;
+  padding: 0 30px 0 10px;
+}
+
 .summaryPill {
-  appearance: none;
-  border: 2px solid transparent;
   border-radius: 999px;
-  cursor: pointer;
-  font-family: inherit;
   font-size: 12px;
   font-weight: 900;
   line-height: 1;
   padding: 6px 9px;
-}
-
-.summaryPill.active {
-  border-color: currentColor;
-  box-shadow: 0 0 0 3px rgba(30, 99, 214, .12);
-}
-
-.summaryPill:focus-visible {
-  outline: 3px solid rgba(30, 99, 214, .28);
-  outline-offset: 2px;
 }
 
 .summaryPill.deductible {

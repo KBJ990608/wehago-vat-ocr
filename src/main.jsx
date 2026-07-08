@@ -1113,35 +1113,27 @@ function App() {
         <section className="tablePanel">
           <div className="tableToolbar">
             <div className="toolbarTitle">
+              <label className="decisionFilter">
+                <span>판정</span>
+                <select
+                  value={decisionFilter}
+                  onChange={(event) => setDecisionFilter(event.target.value)}
+                  aria-label="판정 필터"
+                >
+                  <option value="">전체</option>
+                  {RESULT_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{DECISION_LABELS[option]}</option>
+                  ))}
+                </select>
+              </label>
               <strong>{visibleRows.length.toLocaleString()}건</strong>
               <span>{decisionFilter ? `${DECISION_LABELS[decisionFilter]} 표시` : '판정된 거래'}</span>
               <div className="toolbarSummary" aria-label="판정 요약">
-                <button
-                  type="button"
-                  className={`summaryPill deductible ${decisionFilter === '공제' ? 'active' : ''}`}
-                  onClick={() => setDecisionFilter((currentFilter) => (currentFilter === '공제' ? '' : '공제'))}
-                  aria-pressed={decisionFilter === '공제'}
-                >
-                  공제 {summary['공제'] || 0}
-                </button>
+                <span className="summaryPill deductible">공제 {summary['공제'] || 0}</span>
                 <span className="summaryDivider">/</span>
-                <button
-                  type="button"
-                  className={`summaryPill nondeductible ${decisionFilter === '불공제' ? 'active' : ''}`}
-                  onClick={() => setDecisionFilter((currentFilter) => (currentFilter === '불공제' ? '' : '불공제'))}
-                  aria-pressed={decisionFilter === '불공제'}
-                >
-                  불공제 {summary['불공제'] || 0}
-                </button>
+                <span className="summaryPill nondeductible">불공제 {summary['불공제'] || 0}</span>
                 <span className="summaryDivider">/</span>
-                <button
-                  type="button"
-                  className={`summaryPill review ${decisionFilter === '검토필요' ? 'active' : ''}`}
-                  onClick={() => setDecisionFilter((currentFilter) => (currentFilter === '검토필요' ? '' : '검토필요'))}
-                  aria-pressed={decisionFilter === '검토필요'}
-                >
-                  검토필요 {summary['검토필요'] || 0}
-                </button>
+                <span className="summaryPill review">검토필요 {summary['검토필요'] || 0}</span>
               </div>
             </div>
           </div>
