@@ -581,6 +581,42 @@ td textarea {
   font-weight: 900;
 }
 
+.decisionCell {
+  align-items: start;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  min-width: 88px;
+}
+
+.decisionCell select {
+  min-width: 74px;
+  width: auto;
+}
+
+.reportButton {
+  background: #fff;
+  border: 1px solid #f2b8b5;
+  border-radius: 6px;
+  color: #b8261e;
+  font-size: 12px;
+  font-weight: 900;
+  min-height: 28px;
+  padding: 0 9px;
+}
+
+.reportButton:hover:not(:disabled) {
+  background: #fff4f3;
+}
+
+.reportButton.reported,
+.reportButton:disabled {
+  background: #f4f7fa;
+  border-color: #d3dce7;
+  color: #607389;
+  cursor: default;
+}
+
 .judgement.공제 {
   background: #e8f7ef;
   color: #10663b;

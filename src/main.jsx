@@ -694,6 +694,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [legalBasisLoadingId, setLegalBasisLoadingId] = useState('');
   const [bulkBasisStatus, setBulkBasisStatus] = useState('');
+  const [reportedRowIds, setReportedRowIds] = useState(() => new Set());
   const [authView, setAuthView] = useState('app');
   const excelInputRef = useRef(null);
   const ocrInputRef = useRef(null);
@@ -752,6 +753,7 @@ function App() {
     setFileName('');
     setImageUrl('');
     setRows([]);
+    setReportedRowIds(new Set());
     setPreviewText('');
     setStatus('업로드 대기');
     setRuleStatus('판정 룰 준비 완료');
@@ -762,6 +764,7 @@ function App() {
     setFileName(file.name);
     setImageUrl('');
     setRows([]);
+    setReportedRowIds(new Set());
     setPreviewText('');
     setStatus('파일 분석 중');
     setRuleStatus('판정 룰 적용 중');
@@ -789,6 +792,7 @@ function App() {
     setFileName(file.name);
     setImageUrl(URL.createObjectURL(file));
     setRows([]);
+    setReportedRowIds(new Set());
     setPreviewText('');
     setStatus('보조 OCR 실행 중');
     setRuleStatus('판정 룰 적용 중');
@@ -830,6 +834,14 @@ function App() {
   function addEmptyRow() {
     const base = Object.fromEntries(COLUMNS.map((column) => [column, '']));
     setRows((currentRows) => [...currentRows, applyJudgement(base, lawInfo?.articleReferences ?? {})]);
+  }
+
+  function reportNonDeductibleRow(id) {
+    setReportedRowIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      nextIds.add(id);
+      return nextIds;
+    });
   }
 
   function downloadExcel() {
@@ -1193,13 +1205,25 @@ function App() {
                       </td>
                     ))}
                     <td>
-                      <select
-                        className={`judgement ${normalizeDecision(row['판정'])}`}
-                        value={normalizeDecision(row['판정'])}
-                        onChange={(event) => updateCell(row.id, '판정', event.target.value)}
-                      >
-                        {RESULT_OPTIONS.map((option) => <option key={option} value={option}>{DECISION_LABELS[option]}</option>)}
-                      </select>
+                      <div className="decisionCell">
+                        <select
+                          className={`judgement ${normalizeDecision(row['판정'])}`}
+                          value={normalizeDecision(row['판정'])}
+                          onChange={(event) => updateCell(row.id, '판정', event.target.value)}
+                        >
+                          {RESULT_OPTIONS.map((option) => <option key={option} value={option}>{DECISION_LABELS[option]}</option>)}
+                        </select>
+                        {normalizeDecision(row['판정']) === '불공제' ? (
+                          <button
+                            type="button"
+                            className={`reportButton ${reportedRowIds.has(row.id) ? 'reported' : ''}`}
+                            disabled={reportedRowIds.has(row.id)}
+                            onClick={() => reportNonDeductibleRow(row.id)}
+                          >
+                            {reportedRowIds.has(row.id) ? '신고 완료' : '신고 하기'}
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                     <td>
                       <input
