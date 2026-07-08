@@ -1153,9 +1153,16 @@ function App() {
 
         <section className="tablePanel">
           <div className="tableToolbar">
-            <div>
+            <div className="toolbarTitle">
               <strong>{rows.length.toLocaleString()}건</strong>
               <span>판정된 거래</span>
+              <div className="toolbarSummary" aria-label="판정 요약">
+                <span className="summaryPill deductible">공제 {summary['공제'] || 0}</span>
+                <span className="summaryDivider">/</span>
+                <span className="summaryPill nondeductible">불공제 {summary['불공제'] || 0}</span>
+                <span className="summaryDivider">/</span>
+                <span className="summaryPill review">검토필요 {summary['검토필요'] || 0}</span>
+              </div>
               {bulkBasisStatus ? <span>{bulkBasisStatus}</span> : null}
             </div>
             <div className="toolbarActions">
