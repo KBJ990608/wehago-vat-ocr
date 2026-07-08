@@ -1254,7 +1254,7 @@ function App() {
                                   <textarea
                                     value={reportDraft.reason}
                                     onChange={(event) => setReportDraft({ rowId: row.id, reason: event.target.value })}
-                                    placeholder="판정 결과에서 잘못된 부분을 알려주세요."
+                                    placeholder="예) 전표가 ‘공제’로 판정되었지만, 접대비 항목이므로 ‘불공제’가 맞습니다."
                                   />
                                   <div className="reportActions">
                                     <button type="button" onClick={() => submitErrorReport(row)} disabled={!canSubmitReport}>
