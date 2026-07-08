@@ -694,7 +694,8 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [legalBasisLoadingId, setLegalBasisLoadingId] = useState('');
   const [bulkBasisStatus, setBulkBasisStatus] = useState('');
-  const [reportedRowIds, setReportedRowIds] = useState(() => new Set());
+  const [rowReports, setRowReports] = useState({});
+  const [reportDraft, setReportDraft] = useState({ rowId: '', reason: '' });
   const [authView, setAuthView] = useState('app');
   const excelInputRef = useRef(null);
   const ocrInputRef = useRef(null);
@@ -753,7 +754,8 @@ function App() {
     setFileName('');
     setImageUrl('');
     setRows([]);
-    setReportedRowIds(new Set());
+    setRowReports({});
+    setReportDraft({ rowId: '', reason: '' });
     setPreviewText('');
     setStatus('업로드 대기');
     setRuleStatus('판정 룰 준비 완료');
@@ -764,7 +766,8 @@ function App() {
     setFileName(file.name);
     setImageUrl('');
     setRows([]);
-    setReportedRowIds(new Set());
+    setRowReports({});
+    setReportDraft({ rowId: '', reason: '' });
     setPreviewText('');
     setStatus('파일 분석 중');
     setRuleStatus('판정 룰 적용 중');
@@ -792,7 +795,8 @@ function App() {
     setFileName(file.name);
     setImageUrl(URL.createObjectURL(file));
     setRows([]);
-    setReportedRowIds(new Set());
+    setRowReports({});
+    setReportDraft({ rowId: '', reason: '' });
     setPreviewText('');
     setStatus('보조 OCR 실행 중');
     setRuleStatus('판정 룰 적용 중');
@@ -836,12 +840,30 @@ function App() {
     setRows((currentRows) => [...currentRows, applyJudgement(base, lawInfo?.articleReferences ?? {})]);
   }
 
-  function reportNonDeductibleRow(id) {
-    setReportedRowIds((currentIds) => {
-      const nextIds = new Set(currentIds);
-      nextIds.add(id);
-      return nextIds;
+  function openErrorReport(row) {
+    setReportDraft({
+      rowId: row.id,
+      reason: rowReports[row.id]?.reason || '',
     });
+  }
+
+  function cancelErrorReport() {
+    setReportDraft({ rowId: '', reason: '' });
+  }
+
+  function submitErrorReport(row) {
+    const reason = normalizeText(reportDraft.reason);
+    if (!reason) return;
+
+    setRowReports((currentReports) => ({
+      ...currentReports,
+      [row.id]: {
+        reason,
+        decision: normalizeDecision(row['판정']),
+        reportedAt: new Date().toISOString(),
+      },
+    }));
+    setReportDraft({ rowId: '', reason: '' });
   }
 
   function downloadExcel() {
@@ -1206,6 +1228,13 @@ function App() {
                     ))}
                     <td>
                       <div className="decisionCell">
+                        {(() => {
+                          const rowReport = rowReports[row.id];
+                          const isReportOpen = reportDraft.rowId === row.id;
+                          const canSubmitReport = isReportOpen && !!normalizeText(reportDraft.reason);
+
+                          return (
+                            <>
                         <select
                           className={`judgement ${normalizeDecision(row['판정'])}`}
                           value={normalizeDecision(row['판정'])}
@@ -1213,16 +1242,38 @@ function App() {
                         >
                           {RESULT_OPTIONS.map((option) => <option key={option} value={option}>{DECISION_LABELS[option]}</option>)}
                         </select>
-                        {normalizeDecision(row['판정']) === '불공제' ? (
-                          <button
-                            type="button"
-                            className={`reportButton ${reportedRowIds.has(row.id) ? 'reported' : ''}`}
-                            disabled={reportedRowIds.has(row.id)}
-                            onClick={() => reportNonDeductibleRow(row.id)}
-                          >
-                            {reportedRowIds.has(row.id) ? '신고 완료' : '신고 하기'}
-                          </button>
-                        ) : null}
+                              <button
+                                type="button"
+                                className={`reportButton ${rowReport ? 'reported' : ''}`}
+                                onClick={() => openErrorReport(row)}
+                              >
+                                {rowReport ? '신고 완료' : '오류 신고하기'}
+                              </button>
+                              {isReportOpen ? (
+                                <div className="reportEditor">
+                                  <textarea
+                                    value={reportDraft.reason}
+                                    onChange={(event) => setReportDraft({ rowId: row.id, reason: event.target.value })}
+                                    placeholder="오류 사유를 입력하세요"
+                                  />
+                                  <div className="reportActions">
+                                    <button type="button" onClick={() => submitErrorReport(row)} disabled={!canSubmitReport}>
+                                      제출
+                                    </button>
+                                    <button type="button" onClick={cancelErrorReport}>
+                                      취소
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : null}
+                              {rowReport && !isReportOpen ? (
+                                <small className="reportReason" title={rowReport.reason}>
+                                  사유: {rowReport.reason}
+                                </small>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td>

@@ -609,12 +609,67 @@ td textarea {
   background: #fff4f3;
 }
 
-.reportButton.reported,
-.reportButton:disabled {
+.reportButton.reported {
   background: #f4f7fa;
   border-color: #d3dce7;
   color: #607389;
-  cursor: default;
+}
+
+.reportEditor {
+  display: grid;
+  gap: 6px;
+  min-width: 150px;
+}
+
+.reportEditor textarea {
+  background: #fff;
+  border: 1px solid #c7d2df;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  min-height: 62px;
+  padding: 7px;
+  resize: vertical;
+  width: 170px;
+}
+
+.reportActions {
+  display: flex;
+  gap: 6px;
+}
+
+.reportActions button {
+  background: #fff;
+  border: 1px solid #c7d2df;
+  border-radius: 6px;
+  color: #1c2836;
+  font-size: 12px;
+  font-weight: 900;
+  min-height: 28px;
+  padding: 0 9px;
+}
+
+.reportActions button:first-child {
+  background: #185adb;
+  border-color: #185adb;
+  color: #fff;
+}
+
+.reportActions button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.reportReason {
+  color: #607389;
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .judgement.공제 {
