@@ -533,7 +533,7 @@ function withLegalBasis(row, result) {
   };
 }
 
-function parseWorkbook(arrayBuffer, fileName, articleReferences = {}) {
+function parseWorkbook(arrayBuffer, articleReferences = {}) {
   const workbook = XLSX.read(arrayBuffer, {
     type: 'array',
     raw: false,
@@ -553,18 +553,9 @@ function parseWorkbook(arrayBuffer, fileName, articleReferences = {}) {
     .map((row) => shapeRow(row, columnMap))
     .filter(isValidRow)
     .map((row) => applyJudgement(row, articleReferences));
-  const previewRows = sheetRows.slice(0, 12).map((row) => row.map(normalizeText).join(' | ')).join('\n');
-  const mappingPreview = Object.entries(columnMap)
-    .map(([column, index]) => `${column} ← ${headers[index] || `${index + 1}번째 열`}`)
-    .join('\n');
-
   return {
     rows: shapedRows,
     isResultExport,
-    warning: isResultExport
-      ? '이 파일은 앱에서 다운로드한 결과 파일로 보입니다. 정확한 재판정을 위해 원본 WEHAGO/전표 엑셀 파일을 업로드하세요.'
-      : '',
-    preview: `파일명: ${fileName}\n시트: ${sheetName}\n헤더 행: ${headerIndex + 1}\n\n${isResultExport ? '[주의]\n이 파일은 앱에서 다운로드한 결과 파일로 보입니다. 정확한 재판정을 위해 원본 WEHAGO/전표 엑셀 파일을 업로드하세요.\n\n' : ''}[컬럼 매핑]\n${mappingPreview || '자동 매핑에 실패하여 기본 순서로 처리합니다.'}\n\n[원본 데이터 미리보기]\n${previewRows}`,
   };
 }
 
@@ -686,7 +677,6 @@ function App() {
   const [fileName, setFileName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [rows, setRows] = useState([]);
-  const [previewText, setPreviewText] = useState('');
   const [status, setStatus] = useState('업로드 대기');
   const [lawInfo, setLawInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -758,7 +748,6 @@ function App() {
     setRowReports({});
     setReportDraft({ rowId: '', reason: '' });
     setDecisionFilter('');
-    setPreviewText('');
     setStatus('업로드 대기');
   }
 
@@ -770,19 +759,16 @@ function App() {
     setRowReports({});
     setReportDraft({ rowId: '', reason: '' });
     setDecisionFilter('');
-    setPreviewText('');
     setStatus('파일 분석 중');
     setIsProcessing(true);
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const parsed = parseWorkbook(arrayBuffer, file.name, lawInfo?.articleReferences ?? {});
+      const parsed = parseWorkbook(arrayBuffer, lawInfo?.articleReferences ?? {});
       setRows(parsed.rows);
-      setPreviewText(parsed.preview);
       setStatus(parsed.isResultExport ? '결과 파일 재업로드 감지' : '엑셀 분석 완료');
     } catch (error) {
       setStatus('파일 분석 실패');
-      setPreviewText(String(error?.message ?? error));
       console.error(error);
     } finally {
       setIsProcessing(false);
@@ -797,7 +783,6 @@ function App() {
     setRowReports({});
     setReportDraft({ rowId: '', reason: '' });
     setDecisionFilter('');
-    setPreviewText('');
     setStatus('보조 OCR 실행 중');
     setIsProcessing(true);
 
@@ -806,12 +791,10 @@ function App() {
       const result = await Tesseract.recognize(processedImage, 'kor+eng');
       const text = result.data.text;
       const parsedRows = parseOcrText(text, lawInfo?.articleReferences ?? {});
-      setPreviewText(text);
       setRows(parsedRows);
       setStatus(parsedRows.length ? `거래 후보 ${parsedRows.length}건 / 검토필요` : '거래 후보 0건');
     } catch (error) {
       setStatus('OCR 실패');
-      setPreviewText(String(error?.message ?? error));
       console.error(error);
     } finally {
       setIsProcessing(false);
@@ -1101,13 +1084,6 @@ function App() {
             {imageUrl ? <img src={imageUrl} alt="업로드한 스크린샷 미리보기" /> : null}
           </div>
 
-          <details className="ocrText">
-            <summary>원본 데이터 미리보기</summary>
-            <pre>
-              {previewText || '업로드 후 원본 데이터 일부가 여기에 표시됩니다.'}
-              {lawInfo ? `\n\n[법령 API]\n참고 법률: ${lawInfo.title}\n법령ID: ${lawInfo.lawId || '-'}\n법령일련번호: ${lawInfo.mst || '-'}\n시행일자: ${lawInfo.enforcementDate || '-'}\n공포일자: ${lawInfo.promulgationDate || '-'}\n소관부처: ${lawInfo.ministry || '-'}` : ''}
-            </pre>
-          </details>
         </aside>
 
         <section className="tablePanel">

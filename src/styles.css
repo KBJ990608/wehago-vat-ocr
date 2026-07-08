@@ -398,27 +398,6 @@ h1 {
   width: 100%;
 }
 
-.ocrText {
-  border-top: 1px solid #e1e8ef;
-  padding-top: 10px;
-}
-
-.ocrText summary {
-  color: #43576b;
-  cursor: pointer;
-  font-weight: 800;
-}
-
-.ocrText pre {
-  background: #0f1720;
-  border-radius: 7px;
-  color: #dbeafe;
-  max-height: 220px;
-  overflow: auto;
-  padding: 10px;
-  white-space: pre-wrap;
-}
-
 .tablePanel {
   min-width: 0;
   overflow: hidden;
