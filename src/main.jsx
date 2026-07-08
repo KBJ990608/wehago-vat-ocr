@@ -1254,7 +1254,7 @@ function App() {
                                   <textarea
                                     value={reportDraft.reason}
                                     onChange={(event) => setReportDraft({ rowId: row.id, reason: event.target.value })}
-                                    placeholder="오류 사유를 입력하세요"
+                                    placeholder="판정 결과에서 잘못된 부분을 알려주세요."
                                   />
                                   <div className="reportActions">
                                     <button type="button" onClick={() => submitErrorReport(row)} disabled={!canSubmitReport}>
