@@ -1113,6 +1113,15 @@ function App() {
         <section className="tablePanel">
           <div className="tableToolbar">
             <div className="toolbarTitle">
+              <strong>{visibleRows.length.toLocaleString()}건</strong>
+              <span>{decisionFilter ? `${DECISION_LABELS[decisionFilter]} 표시` : '판정된 거래'}</span>
+              <div className="toolbarSummary" aria-label="판정 요약">
+                <span className="summaryPill deductible">공제 {summary['공제'] || 0}</span>
+                <span className="summaryDivider">/</span>
+                <span className="summaryPill nondeductible">불공제 {summary['불공제'] || 0}</span>
+                <span className="summaryDivider">/</span>
+                <span className="summaryPill review">검토필요 {summary['검토필요'] || 0}</span>
+              </div>
               <label className="decisionFilter">
                 <span>판정</span>
                 <select
@@ -1126,15 +1135,6 @@ function App() {
                   ))}
                 </select>
               </label>
-              <strong>{visibleRows.length.toLocaleString()}건</strong>
-              <span>{decisionFilter ? `${DECISION_LABELS[decisionFilter]} 표시` : '판정된 거래'}</span>
-              <div className="toolbarSummary" aria-label="판정 요약">
-                <span className="summaryPill deductible">공제 {summary['공제'] || 0}</span>
-                <span className="summaryDivider">/</span>
-                <span className="summaryPill nondeductible">불공제 {summary['불공제'] || 0}</span>
-                <span className="summaryDivider">/</span>
-                <span className="summaryPill review">검토필요 {summary['검토필요'] || 0}</span>
-              </div>
             </div>
           </div>
 
