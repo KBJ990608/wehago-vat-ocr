@@ -358,36 +358,6 @@ h1 {
   font-size: 22px;
 }
 
-.lawStatus,
-.ruleStatus {
-  border: 1px solid #e1e8ef;
-  border-radius: 8px;
-  display: grid;
-  gap: 4px;
-  padding: 12px;
-}
-
-.lawStatus span,
-.ruleStatus span {
-  color: #43576b;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.lawStatus small {
-  color: #718399;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.lawStatus p,
-.ruleStatus p {
-  color: #43576b;
-  font-size: 12px;
-  line-height: 1.5;
-  margin: 4px 0 0;
-}
-
 .secondaryUpload {
   align-items: center;
   border: 1px solid #e1e8ef;

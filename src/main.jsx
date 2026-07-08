@@ -688,8 +688,6 @@ function App() {
   const [rows, setRows] = useState([]);
   const [previewText, setPreviewText] = useState('');
   const [status, setStatus] = useState('업로드 대기');
-  const [lawStatus, setLawStatus] = useState('부가가치세법 확인 중');
-  const [ruleStatus, setRuleStatus] = useState('판정 룰 준비 완료');
   const [lawInfo, setLawInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [legalBasisLoadingId, setLegalBasisLoadingId] = useState('');
@@ -716,7 +714,6 @@ function App() {
         const vatAct = await fetchVatAct();
         if (cancelled) return;
         setLawInfo(vatAct);
-        setLawStatus(`${vatAct.title || '부가가치세법'} 본문 연결 완료 · 제26조/제38조/제39조 확인`);
         setRows((currentRows) =>
           currentRows.map(({ id, 사유, decision, confidence, reason, evidenceKeywords, warning, legalBasis, 판정, 신뢰도, 근거조항, 근거키워드, 주의, 법령근거, '법 기준 사유': legalReason, ...baseRow }) => {
             const judgement = judgeVat(baseRow, vatAct.articleReferences);
@@ -730,7 +727,6 @@ function App() {
         );
       } catch (error) {
         if (cancelled) return;
-        setLawStatus(`법령 본문 연결 실패: ${error?.message ?? error} · 기본 조항은 계속 표시됩니다`);
       }
     }
 
@@ -758,7 +754,6 @@ function App() {
     setReportDraft({ rowId: '', reason: '' });
     setPreviewText('');
     setStatus('업로드 대기');
-    setRuleStatus('판정 룰 준비 완료');
   }
 
   async function handleSpreadsheet(file) {
@@ -770,7 +765,6 @@ function App() {
     setReportDraft({ rowId: '', reason: '' });
     setPreviewText('');
     setStatus('파일 분석 중');
-    setRuleStatus('판정 룰 적용 중');
     setIsProcessing(true);
 
     try {
@@ -779,10 +773,8 @@ function App() {
       setRows(parsed.rows);
       setPreviewText(parsed.preview);
       setStatus(parsed.isResultExport ? '결과 파일 재업로드 감지' : '엑셀 분석 완료');
-      setRuleStatus(`판정 룰 적용 완료 · ${parsed.rows.length.toLocaleString()}건`);
     } catch (error) {
       setStatus('파일 분석 실패');
-      setRuleStatus('판정 룰 적용 실패');
       setPreviewText(String(error?.message ?? error));
       console.error(error);
     } finally {
@@ -799,7 +791,6 @@ function App() {
     setReportDraft({ rowId: '', reason: '' });
     setPreviewText('');
     setStatus('보조 OCR 실행 중');
-    setRuleStatus('판정 룰 적용 중');
     setIsProcessing(true);
 
     try {
@@ -810,10 +801,8 @@ function App() {
       setPreviewText(text);
       setRows(parsedRows);
       setStatus(parsedRows.length ? `거래 후보 ${parsedRows.length}건 / 검토필요` : '거래 후보 0건');
-      setRuleStatus(`판정 룰 적용 완료 · ${parsedRows.length.toLocaleString()}건`);
     } catch (error) {
       setStatus('OCR 실패');
-      setRuleStatus('판정 룰 적용 실패');
       setPreviewText(String(error?.message ?? error));
       console.error(error);
     } finally {
@@ -1139,37 +1128,6 @@ function App() {
             <div><Check size={16} /><span>공제</span><strong>{summary['공제'] || 0}</strong></div>
             <div><X size={16} /><span>불공제</span><strong>{summary['불공제'] || 0}</strong></div>
             <div><AlertCircle size={16} /><span>검토필요</span><strong>{summary['검토필요'] || 0}</strong></div>
-          </div>
-
-          <div className="lawStatus">
-            <strong>법령 기준</strong>
-            <span>{lawStatus}</span>
-            {lawInfo ? (
-              <>
-                <small>
-                  참고 법률: {lawInfo.title || '부가가치세법'}
-                  <br />
-                  법령ID {lawInfo.lawId || '-'} · 법령일련번호 {lawInfo.mst || '-'}
-                  <br />
-                  시행일자 {lawInfo.enforcementDate || '-'} · 공포일자 {lawInfo.promulgationDate || '-'}
-                  <br />
-                  소관부처 {lawInfo.ministry || '-'}
-                  <br />
-                  원문 확인 조항 {Object.values(lawInfo.articleReferences ?? {}).map((article) => article.label).join(', ') || '-'}
-                </small>
-                <p>
-                  부가가치세법 본문은 근거 조항 표시용으로 사용합니다. 실제 공제/불공제/검토필요 판정은 판정 룰 엔진이 수행합니다.
-                </p>
-              </>
-            ) : null}
-          </div>
-
-          <div className="ruleStatus">
-            <strong>판정 룰</strong>
-            <span>{ruleStatus}</span>
-            <p>
-              공제, 불공제, 검토필요 판정은 rules.js의 키워드 기반 룰로 수행합니다. 법령 API가 실패해도 판정 룰은 계속 작동합니다.
-            </p>
           </div>
 
           <div className="secondaryUpload">
