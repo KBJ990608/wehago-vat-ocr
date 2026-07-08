@@ -5,10 +5,11 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
+    base: './',
     plugins: [react()],
     define: {
       __LAW_API_OC__: JSON.stringify(env.LAW_API_OC ?? ''),
-      __KSKILL_PROXY_BASE_URL__: JSON.stringify(env.KSKILL_PROXY_BASE_URL ?? ''),
+      __KSKILL_PROXY_BASE_URL__: JSON.stringify(env.KSKILL_PROXY_BASE_URL ?? 'https://k-skill-proxy.nomadamas.org'),
       __APP_ENABLE_LOGIN__: JSON.stringify(env.APP_ENABLE_LOGIN === 'true'),
       __APP_LOGIN_EMAIL__: JSON.stringify(env.APP_LOGIN_EMAIL ?? 'admin@example.com'),
       __APP_LOGIN_PASSWORD__: JSON.stringify(env.APP_LOGIN_PASSWORD ?? 'change-me'),

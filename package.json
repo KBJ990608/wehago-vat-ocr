@@ -1,16 +1,30 @@
 {
+  "name": "wehago-vat-ocr",
+  "productName": "WEHAGO VAT OCR",
+  "version": "1.0.0",
+  "description": "WEHAGO VAT OCR desktop app",
+  "main": "electron/main.cjs",
+  "private": true,
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build"
+    "build": "vite build",
+    "electron:dev": "electron .",
+    "electron:package": "npm run build && electron-forge package",
+    "electron:make": "npm run build && electron-forge make",
+    "electron:make:win": "npm run build && electron-forge make --platform=win32 --arch=x64"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest",
     "tesseract.js": "latest",
+    "vite": "latest",
     "xlsx": "latest"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "electron": "^43.1.0"
+  }
 }
