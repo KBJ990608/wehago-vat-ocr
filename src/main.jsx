@@ -691,7 +691,6 @@ function App() {
   const [lawInfo, setLawInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [legalBasisLoadingId, setLegalBasisLoadingId] = useState('');
-  const [bulkBasisStatus, setBulkBasisStatus] = useState('');
   const [rowReports, setRowReports] = useState({});
   const [reportDraft, setReportDraft] = useState({ rowId: '', reason: '' });
   const [authView, setAuthView] = useState('app');
@@ -977,50 +976,6 @@ function App() {
     }
   }
 
-  async function showAllLegalBasis() {
-    if (!rows.length || bulkBasisStatus) return;
-
-    setBulkBasisStatus('전체 법령근거 조회 준비 중');
-    const cache = new Map();
-    const nextRows = [];
-
-    for (let index = 0; index < rows.length; index += 1) {
-      const row = rows[index];
-      const reason = buildBasisReason(row) || '부가가치세 매입세액 공제 불공제';
-      const cacheKey = [
-        normalizeDecision(row['판정']),
-        row['근거조항'],
-        row['근거키워드'],
-        row['품명'],
-        row['업태'],
-        row['종목'],
-        row['차변계정'],
-      ]
-        .map(normalizeText)
-        .join('|');
-
-      setBulkBasisStatus(`법령근거 조회 중 ${index + 1}/${rows.length}`);
-
-      try {
-        if (!cache.has(cacheKey)) {
-          cache.set(cacheKey, await findVoucherLegalBasis(reason));
-        }
-        nextRows.push(withLegalBasis(row, cache.get(cacheKey)));
-      } catch (error) {
-        nextRows.push({
-          ...row,
-          판정: '검토필요',
-          법령근거: '[]',
-          주의: '법령 검색 API가 실패했습니다. 검토필요로 유지하고 원본 증빙을 확인하세요.',
-          '법 기준 사유': `${row['법 기준 사유'] || ''}\n\n법령근거: []\n${error?.message ?? error}`.trim(),
-        });
-      }
-    }
-
-    setRows(nextRows);
-    setBulkBasisStatus('');
-  }
-
   if (APP_ENABLE_LOGIN && !session) {
     if (authView === 'signup') {
       return (
@@ -1163,12 +1118,8 @@ function App() {
                 <span className="summaryDivider">/</span>
                 <span className="summaryPill review">검토필요 {summary['검토필요'] || 0}</span>
               </div>
-              {bulkBasisStatus ? <span>{bulkBasisStatus}</span> : null}
             </div>
             <div className="toolbarActions">
-              <button type="button" onClick={showAllLegalBasis} disabled={!rows.length || !!bulkBasisStatus}>
-                {bulkBasisStatus ? '조회 중' : '전체 근거 조회'}
-              </button>
               <button type="button" onClick={addEmptyRow}>행 추가</button>
             </div>
           </div>
