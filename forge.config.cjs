@@ -3,6 +3,7 @@ const path = require('path');
 
 const appIconBasePath = path.resolve(__dirname, 'assets', 'icon');
 const appIconIcoPath = `${appIconBasePath}.ico`;
+const blankLoadingGifPath = path.resolve(__dirname, 'assets', 'blank-loading.gif');
 
 const keepLocaleFiles = new Set(['ko.pak', 'en-US.pak', 'en-GB.pak']);
 
@@ -59,6 +60,7 @@ module.exports = {
         description: 'WEHAGO VAT OCR desktop app',
         setupExe: 'WEHAGO VAT OCR Setup.exe',
         setupIcon: appIconIcoPath,
+        loadingGif: blankLoadingGifPath,
         iconUrl: 'https://raw.githubusercontent.com/minjik1002-maker/wehago-vat-ocr/main/assets/icon.ico',
         noMsi: true,
       },
