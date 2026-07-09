@@ -14,18 +14,17 @@
     "electron:make:win": "npm run build && electron-forge make --platform=win32 --arch=x64",
     "icons:build": "node scripts/build-icons.cjs"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
     "@vitejs/plugin-react": "latest",
+    "electron": "^43.1.0",
     "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
     "tesseract.js": "latest",
     "vite": "latest",
     "xlsx": "latest"
-  },
-  "devDependencies": {
-    "@electron-forge/cli": "^7.11.2",
-    "@electron-forge/maker-squirrel": "^7.11.2",
-    "electron": "^43.1.0"
   }
 }
