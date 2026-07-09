@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
+const appIconBasePath = path.resolve(__dirname, 'assets', 'icon');
+const appIconIcoPath = `${appIconBasePath}.ico`;
+
 const keepLocaleFiles = new Set(['ko.pak', 'en-US.pak', 'en-GB.pak']);
 
 function pruneUnusedLocales(buildPath, electronVersion, platform, arch, callback) {
@@ -30,7 +33,7 @@ module.exports = {
   packagerConfig: {
     name: 'WEHAGO VAT OCR',
     executableName: 'WEHAGO VAT OCR',
-    icon: 'assets/icon',
+    icon: appIconBasePath,
     asar: true,
     overwrite: true,
     afterComplete: [pruneUnusedLocales],
@@ -55,7 +58,8 @@ module.exports = {
         authors: 'WEHAGO VAT OCR',
         description: 'WEHAGO VAT OCR desktop app',
         setupExe: 'WEHAGO VAT OCR Setup.exe',
-        setupIcon: 'assets/icon.ico',
+        setupIcon: appIconIcoPath,
+        iconUrl: 'https://raw.githubusercontent.com/minjik1002-maker/wehago-vat-ocr/main/assets/icon.ico',
         noMsi: true,
       },
     },
