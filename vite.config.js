@@ -27,6 +27,11 @@ export default defineConfig(({ mode }) => {
           secure: true,
           rewrite: (path) => path.replace(/^\/kskill/, ''),
         },
+        '/rag': {
+          target: env.RAG_API_BASE_URL || 'http://127.0.0.1:8765',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/rag/, ''),
+        },
       },
     },
   };

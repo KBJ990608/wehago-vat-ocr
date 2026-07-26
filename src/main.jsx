@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createRoot } from 'react-dom/client';
 import { AlertCircle, Check, Download, FileImage, FileSpreadsheet, LockKeyhole, Mail, RefreshCw, Upload, User, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import Tesseract from 'tesseract.js';
 import * as XLSX from 'xlsx';
 import { fetchVatAct } from './lawApi';
@@ -487,11 +487,11 @@ function SignupScreen({ onSignupComplete, onBack }) {
 }
 
 function buildBasisReason(row) {
+  // 거래처(가맹점명)는 법령 검색어로 쓸모가 없고 외부 요청에 실려 나가므로 제외한다.
   return [
     row['판정'],
     row['근거키워드'],
     row['근거조항'],
-    row['거래처'],
     row['품명'],
     row['업태'],
     row['종목'],
@@ -670,6 +670,119 @@ async function preprocessImage(file) {
   }
   context.putImageData(imageData, 0, 0);
   return canvas.toDataURL('image/png');
+}
+
+function ChatBot() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { type: 'bot', text: '안녕하세요! 매입세액 판정에 대해 궁금한 점이 있으신가요?' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  async function handleSend() {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = input.trim();
+    setMessages(prev => [...prev, { type: 'user', text: userMessage }]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/rag/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: userMessage }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'RAG 응답 오류');
+      }
+
+      const sources = (data.hits || [])
+        .slice(0, 3)
+        .map(hit => `${hit.title} (${hit.date})`)
+        .join('\n');
+      const botResponse = sources
+        ? `${data.answer}\n\n[관련 근거]\n${sources}`
+        : data.answer;
+      setMessages(prev => [...prev, { type: 'bot', text: botResponse }]);
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        {
+          type: 'bot',
+          text: '세법 RAG 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="chatBot">
+      <button
+        className="chatBotToggle"
+        onClick={() => setIsOpen(!isOpen)}
+        title={isOpen ? '챗봇 닫기' : '챗봇 열기'}
+      >
+        <img src="/lumi-chatbot.png" alt="루미" />
+      </button>
+
+      {isOpen && (
+        <div className="chatBotWindow">
+          <div className="chatBotHeader">
+            <strong>매입세액 판정 어시스턴트</strong>
+            <button
+              type="button"
+              className="chatBotClose"
+              onClick={() => setIsOpen(false)}
+              title="닫기"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="chatBotMessages">
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`chatMessage ${msg.type}`}
+              >
+                {msg.type === 'bot' && <img src="/lumi-chatbot.png" alt="루미" className="botAvatar" />}
+                <div className="messageBubble">{msg.text}</div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="chatBotInput">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="질문을 입력하세요..."
+              disabled={isLoading}
+            />
+            <button type="button" onClick={handleSend} title="전송" disabled={isLoading || !input.trim()}>
+              {isLoading ? '…' : '→'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function App() {
@@ -1244,6 +1357,8 @@ function App() {
           </div>
         </section>
       </section>
+
+      <ChatBot />
     </main>
   );
 }
