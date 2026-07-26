@@ -194,10 +194,10 @@ export async function findVoucherLegalBasis(reason: string): Promise<VoucherLega
   }
 
   const evidenceTerms = Array.from(new Set(cleanReason.match(/[가-힣A-Za-z0-9]{2,}/g) ?? []))
-    .filter((term) => !/판정|근거|키워드|신뢰도|주의|관련|부가가치세법|매입세액|공제|불공제|비공제|검토필요/.test(term))
+    .filter((term) => !/판정|근거|키워드|신뢰도|주의|관련|부가가치세법|매입세액|공제|불공제|비공제|검토필요|추가|감지/.test(term))
     .slice(0, 5);
   const lawQuery = '부가가치세법';
-  const caseQuery = ['부가가치세', '매입세액', '공제', ...evidenceTerms].join(' ');
+  const caseQuery = evidenceTerms[0] || '매입세액 공제';
   const [lawSearch, interpretationSearch, precedentSearch] = await Promise.allSettled([
     searchKoreanLaw({ target: 'law', query: lawQuery, display: 3 }),
     searchKoreanLaw({ target: 'expc', query: caseQuery, display: 3 }),
