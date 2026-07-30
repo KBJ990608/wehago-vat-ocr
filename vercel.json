@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/rag/:path*",
-      "destination": "/api/rag/:path*"
+      "source": "/rag/ask",
+      "destination": "/api/lumi"
     },
     {
       "source": "/kskill/:path*",
