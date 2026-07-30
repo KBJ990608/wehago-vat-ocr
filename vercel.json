@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/rag/:path*",
+      "destination": "/api/rag/:path*"
+    },
+    {
       "source": "/kskill/:path*",
       "destination": "https://k-skill-proxy.nomadamas.org/:path*"
     }
