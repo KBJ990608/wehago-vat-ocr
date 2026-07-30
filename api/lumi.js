@@ -8,6 +8,49 @@ const RATE_LIMIT_MAX = 8;
 const buckets = globalThis.__WEHAGO_LUMI_RATE_LIMIT__ || new Map();
 globalThis.__WEHAGO_LUMI_RATE_LIMIT__ = buckets;
 
+const OFFICIAL_CORE_RULES = [
+  {
+    id: 'vat-act-39-1-6',
+    test: /(접대비|기업업무추진비|접대 목적|유사한 비용)/,
+    title: '부가가치세법 제39조 제1항 제6호',
+    date: '2026-01-02',
+    summary:
+      '기업업무추진비 및 이와 유사한 비용으로서 대통령령으로 정하는 비용의 지출에 관련된 매입세액은 매출세액에서 공제하지 않습니다.',
+  },
+  {
+    id: 'vat-decree-79',
+    test: /(접대비|기업업무추진비|접대 목적|유사한 비용)/,
+    title: '부가가치세법 시행령 제79조',
+    date: '2026-04-01',
+    summary:
+      '부가가치세법 제39조 제1항 제6호의 비용은 소득세법 제35조 및 법인세법 제25조에 따른 기업업무추진비 및 이와 유사한 비용의 지출을 말합니다.',
+  },
+  {
+    id: 'vat-act-39-1-4',
+    test: /(사업과 직접 관련이 없|업무무관|사적 사용|개인적 지출)/,
+    title: '부가가치세법 제39조 제1항 제4호',
+    date: '2026-01-02',
+    summary:
+      '사업과 직접 관련이 없는 지출로서 대통령령으로 정하는 지출에 대한 매입세액은 공제하지 않습니다.',
+  },
+  {
+    id: 'vat-act-39-1-5',
+    test: /(비영업용.*승용|소형승용|승용차|자동차.*구입|자동차.*임차|자동차.*유지)/,
+    title: '부가가치세법 제39조 제1항 제5호',
+    date: '2026-01-02',
+    summary:
+      '개별소비세법상 일정 자동차의 구입·임차·유지 관련 매입세액은 원칙적으로 공제하지 않으며, 운수업·자동차판매업 등 직접 영업에 사용하는 경우는 제외될 수 있습니다.',
+  },
+  {
+    id: 'vat-act-39-1-7',
+    test: /(면세사업|면세 매출|토지.*관련|공통매입세액)/,
+    title: '부가가치세법 제39조 제1항 제7호',
+    date: '2026-01-02',
+    summary:
+      '면세사업 등에 관련된 매입세액과 대통령령으로 정하는 토지 관련 매입세액은 공제하지 않습니다. 과세·면세 공통 사용분은 별도 안분 검토가 필요합니다.',
+  },
+];
+
 function sendJson(res, status, payload) {
   res.setHeader('Cache-Control', 'no-store');
   return res.status(status).json(payload);
@@ -56,6 +99,21 @@ function collectRecords(node, output = []) {
   return output;
 }
 
+function collectStrings(node, output = []) {
+  if (typeof node === 'string') {
+    const value = normalize(node);
+    if (value.length >= 20 && value.length <= 8000) output.push(value);
+    return output;
+  }
+  if (!node || typeof node !== 'object') return output;
+  if (Array.isArray(node)) {
+    node.forEach((item) => collectStrings(item, output));
+    return output;
+  }
+  Object.values(node).forEach((value) => collectStrings(value, output));
+  return output;
+}
+
 function arrayOf(value) {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
@@ -90,12 +148,58 @@ function normalizeHit(raw, target) {
     target,
     title: pick(raw, ['법령명한글', '법령명', '안건명', '해석례명', '판례명', '사건명', '제목', 'lawNm', 'title']),
     docId: pick(raw, ['판례일련번호', '해석례일련번호', '법령일련번호', '일련번호', 'MST', 'mst', 'ID', 'id', 'lawId']),
+    mst: pick(raw, ['법령일련번호', '판례일련번호', '해석례일련번호', '일련번호', 'MST', 'mst', 'lsiSeq']),
+    id: pick(raw, ['법령ID', 'ID', 'id', 'lawId']),
     date: pick(raw, ['시행일자', '공포일자', '선고일자', '의결일자', '생성일자', 'date']),
     summary: pick(raw, ['요약', '질의요지', '회신요지', '판시사항', '판결요지', 'summary', '내용', '본문']),
   };
 }
 
-async function searchLaw(target, query, display = 3) {
+function expandQuery(query) {
+  const additions = [];
+  if (/(접대비|기업업무추진비|접대 목적)/.test(query)) {
+    additions.push('기업업무추진비 매입세액 불공제 부가가치세법 제39조 제1항 제6호 시행령 제79조');
+  }
+  if (/(승용차|소형승용|자동차.*구입|자동차.*임차|자동차.*유지)/.test(query)) {
+    additions.push('비영업용 소형승용자동차 매입세액 불공제 부가가치세법 제39조 제1항 제5호');
+  }
+  if (/(업무무관|사업과 직접 관련이 없|사적 사용|개인적 지출)/.test(query)) {
+    additions.push('사업과 직접 관련이 없는 지출 매입세액 불공제 부가가치세법 제39조 제1항 제4호');
+  }
+  if (/(면세사업|면세 매출|토지.*관련)/.test(query)) {
+    additions.push('면세사업 토지 관련 매입세액 불공제 부가가치세법 제39조 제1항 제7호');
+  }
+  return normalize([query, ...additions].join(' '));
+}
+
+function queryTokens(query) {
+  return Array.from(new Set(normalize(query).match(/[가-힣A-Za-z0-9]{2,}/g) || []));
+}
+
+function relevantDetailText(payload, query) {
+  const tokens = queryTokens(query);
+  const scored = collectStrings(payload)
+    .map((text) => {
+      const tokenScore = tokens.reduce(
+        (sum, token) => sum + (text.includes(token) ? Math.min(token.length, 5) : 0),
+        0,
+      );
+      const legalScore = /제\d+조|매입세액|공제하지|불공제|기업업무추진비|접대비/.test(text) ? 6 : 0;
+      return { text, score: tokenScore + legalScore };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const unique = [];
+  for (const item of scored) {
+    if (unique.some((existing) => existing.includes(item.text) || item.text.includes(existing))) continue;
+    unique.push(item.text);
+    if (unique.length >= 4 || unique.join('\n').length >= 5000) break;
+  }
+  return unique.join('\n');
+}
+
+async function searchLaw(target, query, display = 5) {
   const url = new URL(`${LAW_PROXY}/v1/korean-law/search`);
   url.searchParams.set('target', target);
   url.searchParams.set('query', query);
@@ -114,15 +218,61 @@ async function searchLaw(target, query, display = 3) {
     .slice(0, display);
 }
 
+async function fetchLawDetail(hit, query) {
+  if (!hit.mst && !hit.id) return hit;
+  const url = new URL(`${LAW_PROXY}/v1/korean-law/detail`);
+  url.searchParams.set('target', hit.target);
+  if (hit.mst) url.searchParams.set('MST', hit.mst);
+  if (hit.id) url.searchParams.set('ID', hit.id);
+
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!response.ok) return hit;
+    const payload = await response.json();
+    const detail = relevantDetailText(payload, query);
+    return detail ? { ...hit, summary: detail } : hit;
+  } catch {
+    return hit;
+  }
+}
+
+function officialRuleHits(query) {
+  return OFFICIAL_CORE_RULES
+    .filter((rule) => rule.test.test(query))
+    .map((rule) => ({
+      target: 'law',
+      title: rule.title,
+      docId: rule.id,
+      mst: '',
+      id: '',
+      date: rule.date,
+      summary: rule.summary,
+      officialCoreRule: true,
+    }));
+}
+
+function dedupeHits(hits) {
+  const seen = new Set();
+  return hits.filter((hit) => {
+    const key = `${hit.target}|${hit.docId}|${hit.title}|${hit.summary.slice(0, 80)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function buildContext(hits) {
-  return hits.map((hit, index) => {
+  return hits.slice(0, 8).map((hit, index) => {
     const type = hit.target === 'law' ? '법령' : hit.target === 'expc' ? '해석례' : '판례';
     return [
-      `[${index + 1}] ${type}`,
+      `[${index + 1}] ${type}${hit.officialCoreRule ? ' · 핵심 조문' : ''}`,
       `제목: ${hit.title || '제목 없음'}`,
       hit.docId ? `문서번호: ${hit.docId}` : '',
       hit.date ? `일자: ${hit.date}` : '',
-      hit.summary ? `내용: ${hit.summary.slice(0, 1400)}` : '',
+      hit.summary ? `내용: ${hit.summary.slice(0, 5000)}` : '',
     ].filter(Boolean).join('\n');
   }).join('\n\n---\n\n');
 }
@@ -151,18 +301,21 @@ async function askOpenAI(query, hits, apiKey) {
           content: [
             "당신은 한국 부가가치세 검토를 돕는 AI 어시스턴트 '루미'입니다.",
             '반드시 제공된 검색 근거 안에서만 답하고 근거가 부족하면 단정하지 마세요.',
-            '결론부터 간결한 한국어 존댓말로 답하고 [1], [2]처럼 근거 번호를 표시하세요.',
-            '필요한 추가 사실관계와 증빙을 알려주고, 최종 신고 판단은 최신 법령과 원본 증빙을 확인한 세무 전문가가 해야 한다고 덧붙이세요.',
+            '핵심 조문이 질문을 직접 해결하면 결론을 먼저 분명하게 제시하고 해당 조문 번호를 적으세요.',
+            '예외나 사실관계에 따라 달라질 수 있는 부분만 별도로 구분하세요.',
+            '답변은 결론, 근거, 확인할 사항 순서로 간결한 한국어 존댓말로 작성하세요.',
+            '근거는 [1], [2]처럼 자료 번호를 표시하세요.',
+            '최종 신고 판단은 최신 법령과 원본 증빙을 확인한 세무 전문가가 해야 한다고 짧게 덧붙이세요.',
             '주민등록번호, 계좌번호, 실제 고객명 등 개인정보를 요구하지 마세요.',
           ].join(' '),
         },
         {
           role: 'user',
-          content: `질문:\n${query}\n\n검색된 근거:\n${buildContext(hits)}\n\n위 근거만 사용해 답하세요.`,
+          content: `질문:\n${query}\n\n검색된 근거:\n${buildContext(hits)}\n\n위 근거만 사용해 질문에 직접 답하세요.`,
         },
       ],
-      max_completion_tokens: 700,
-      temperature: 0.2,
+      max_completion_tokens: 900,
+      temperature: 0.1,
     }),
     signal: AbortSignal.timeout(45000),
   });
@@ -198,12 +351,17 @@ export default async function handler(req, res) {
   if (query.length > MAX_QUERY_LENGTH) return sendJson(res, 400, { error: `질문은 ${MAX_QUERY_LENGTH}자 이내로 입력해 주세요.` });
 
   try {
+    const expanded = expandQuery(query);
     const results = await Promise.allSettled([
-      searchLaw('law', '부가가치세법', 3),
-      searchLaw('expc', query, 3),
-      searchLaw('prec', query, 3),
+      searchLaw('law', expanded, 5),
+      searchLaw('expc', expanded, 5),
+      searchLaw('prec', expanded, 5),
     ]);
-    const hits = results.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
+    const searchedHits = results.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
+    const detailedHits = await Promise.all(
+      searchedHits.slice(0, 6).map((hit) => fetchLawDetail(hit, expanded)),
+    );
+    const hits = dedupeHits([...officialRuleHits(query), ...detailedHits, ...searchedHits]).slice(0, 10);
 
     if (!hits.length) {
       return sendJson(res, 200, {
