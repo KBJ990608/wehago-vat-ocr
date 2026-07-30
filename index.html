@@ -4,6 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>신용카드 매입세액 판정기</title>
+    <style>
+      .messageBubble {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .chatMessage.bot .messageBubble {
+        line-height: 1.65;
+      }
+
+      @media (min-width: 769px) {
+        .chatBotWindow {
+          width: min(440px, calc(100vw - 40px));
+          height: min(620px, calc(100vh - 120px));
+        }
+
+        .messageBubble {
+          max-width: 350px;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
