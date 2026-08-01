@@ -1,7 +1,6 @@
 type KoreanLawTarget = 'law' | 'expc' | 'prec';
 
 declare const __LAW_API_OC__: string;
-declare const __KSKILL_PROXY_BASE_URL__: string;
 
 type SearchParams = {
   target: KoreanLawTarget;
@@ -36,12 +35,8 @@ export type VoucherLegalBasisResult = {
 };
 
 const LAW_API_OC = typeof __LAW_API_OC__ === 'string' ? __LAW_API_OC__ : '';
-const KSKILL_PROXY_BASE_URL =
-  typeof __KSKILL_PROXY_BASE_URL__ === 'string'
-    ? __KSKILL_PROXY_BASE_URL__.replace(/\/$/, '')
-    : 'https://k-skill-proxy.nomadamas.org';
 const FALLBACK_LAW_API_BASE = import.meta.env.DEV ? '/DRF' : 'https://www.law.go.kr/DRF';
-const KSKILL_API_BASE = import.meta.env.DEV ? '/kskill' : KSKILL_PROXY_BASE_URL;
+const KSKILL_API_BASE = '/kskill';
 
 function normalizeText(value: unknown) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -218,3 +213,4 @@ export async function findVoucherLegalBasis(reason: string): Promise<VoucherLega
       .map((result) => result.reason?.message ?? String(result.reason)),
   };
 }
+

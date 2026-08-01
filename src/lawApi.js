@@ -1,12 +1,10 @@
 import { normalizeText } from './rules.js';
 
 const LAW_API_OC = typeof __LAW_API_OC__ === 'string' ? __LAW_API_OC__ : '';
-const KSKILL_PROXY_BASE_URL =
-  typeof __KSKILL_PROXY_BASE_URL__ === 'string'
-    ? __KSKILL_PROXY_BASE_URL__.replace(/\/$/, '')
-    : 'https://k-skill-proxy.nomadamas.org';
 const LAW_API_BASE = import.meta.env?.DEV ? '/DRF' : 'https://www.law.go.kr/DRF';
-const KSKILL_API_BASE = import.meta.env?.DEV ? '/kskill' : KSKILL_PROXY_BASE_URL;
+// 브라우저는 외부 프록시를 직접 호출하지 않는다. 개발 환경은 Vite proxy,
+// 운영 환경은 Vercel rewrite가 같은 출처의 /kskill 요청을 중계한다.
+const KSKILL_API_BASE = '/kskill';
 
 const MONITORED_LAW_QUERIES = [
   { title: '부가가치세법', articleNumbers: ['26', '38', '39'], keyPrefix: 'vat-act' },
@@ -193,3 +191,4 @@ export async function fetchMonitoredLaws() {
 }
 
 export const fetchVatAct = fetchMonitoredLaws;
+
