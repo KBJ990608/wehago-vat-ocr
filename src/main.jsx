@@ -865,7 +865,7 @@ function ChatBot() {
 
       const sources = (data.hits || [])
         .slice(0, 3)
-        .map(hit => `${hit.title} (${hit.date})`)
+        .map(hit => `${hit.title} (${formatLawDate(hit.date)})`)
         .join('\n');
       const botResponse = sources
         ? `${data.answer}\n\n[관련 근거]\n${sources}`

@@ -16,5 +16,9 @@ assert.match(source, /summary:\s*content/);
 assert.match(source, /공식 최신 조문 원문/);
 assert.match(source, /최신 공식 조문 원문을 확인하지 못해 공제 여부를 단정할 수 없습니다/);
 assert.match(ragRouteSource, /export \{ default \} from '\.\.\/lumi\.js'/);
+assert.match(source, /function formatLegalDate/);
+assert.match(source, /date: formatLegalDate\(hit\.date\)/);
+assert.match(source, /법률상 공제·불공제 사유와 세금계산서·카드전표 등 증빙 요건은 서로 다른 판단 단계로 구분/);
+assert.match(source, /적격 증빙이 있다는 이유만으로 법률상 불공제 대상이 공제 대상으로 바뀐다고 설명하지 마세요/);
 
-console.log('lumi grounding checks: 11 passed');
+console.log('lumi grounding checks: 15 passed');

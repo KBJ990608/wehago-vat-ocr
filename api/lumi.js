@@ -41,6 +41,13 @@ function normalize(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
+function formatLegalDate(value) {
+  const normalized = normalize(value);
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length !== 8) return normalized || '-';
+  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+}
+
 function isRecord(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -337,7 +344,7 @@ function buildContext(hits) {
       `[${index + 1}] ${type}${hit.officialArticle ? ' · 공식 최신 조문 원문' : ''}`,
       `제목: ${hit.title || '제목 없음'}`,
       hit.docId ? `문서번호: ${hit.docId}` : '',
-      hit.date ? `일자: ${hit.date}` : '',
+      hit.date ? `일자: ${formatLegalDate(hit.date)}` : '',
       hit.summary ? `내용: ${hit.summary.slice(0, 5000)}` : '',
     ].filter(Boolean).join('\n');
   }).join('\n\n---\n\n');
@@ -370,6 +377,9 @@ async function askOpenAI(query, hits, apiKey) {
             '공식 최신 조문 원문이 있으면 그 원문의 현재 문언을 최우선 근거로 사용하세요.',
             '코드에 미리 정해진 세무 결론이 있다고 가정하지 말고, 제공된 최신 원문에서만 결론을 도출하세요.',
             '시행일자와 조문 내용은 검색 근거에 표시된 값만 사용하고 추측하지 마세요.',
+            '법률상 공제·불공제 사유와 세금계산서·카드전표 등 증빙 요건은 서로 다른 판단 단계로 구분해 설명하세요.',
+            '적격 증빙이 있다는 이유만으로 법률상 불공제 대상이 공제 대상으로 바뀐다고 설명하지 마세요.',
+            '증빙이 부족한 경우에도 그것이 법률상 거래 성격에 따른 불공제 사유인지, 별도의 증빙 요건 문제인지 구분하세요.',
             '예외나 사실관계에 따라 달라질 수 있는 부분만 별도로 구분하세요.',
             '답변은 결론, 근거, 확인할 사항 순서로 간결한 한국어 존댓말로 작성하세요.',
             '근거는 [1], [2]처럼 자료 번호를 표시하세요.',
@@ -460,7 +470,7 @@ export default async function handler(req, res) {
         score: 0,
         title: hit.title || '관련 자료',
         doc_type: hit.target === 'law' ? '법령' : hit.target === 'expc' ? '해석례' : '판례',
-        date: hit.date || '-',
+        date: formatLegalDate(hit.date),
       })),
     });
   } catch (error) {
