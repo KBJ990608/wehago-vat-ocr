@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "test:law-monitor": "node scripts/check-law-monitor.mjs",
     "electron:dev": "electron .",
     "electron:package": "npm run build && electron-forge package",
     "electron:make": "npm run build && electron-forge make",

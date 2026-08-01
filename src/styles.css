@@ -244,6 +244,262 @@ h1 {
   display: none;
 }
 
+.lawStatusCard {
+  background: #f4f8ff;
+  border: 1px solid #aac4ef;
+  border-radius: 10px;
+  color: #203247;
+  margin: 0 auto 16px;
+  max-width: 1500px;
+  padding: 16px;
+}
+
+.lawStatusCard.unchanged {
+  background: #f1faf5;
+  border-color: #a7d8bc;
+}
+
+.lawStatusCard.changed {
+  background: #fff7ed;
+  border-color: #f1b77c;
+}
+
+.lawStatusCard.unavailable {
+  background: #faf8f3;
+  border-color: #d9c6a5;
+}
+
+.lawStatusCard.simulation {
+  background: #f7f2ff;
+  border-color: #c5a9ef;
+}
+
+.lawStatusHeader,
+.lawStatusTitle,
+.lawRefreshButton,
+.changedLawItem summary,
+.lawAdminActions,
+.approvalCheck {
+  align-items: center;
+  display: flex;
+}
+
+.lawStatusHeader {
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.lawStatusTitle {
+  gap: 10px;
+}
+
+.lawStatusTitle > div {
+  display: grid;
+  gap: 2px;
+}
+
+.lawStatusTitle span,
+.lawStatusSummary small {
+  color: #63758a;
+  font-size: 12px;
+}
+
+.lawStatusTitle strong {
+  font-size: 18px;
+}
+
+.lawRefreshButton,
+.baselineResetButton {
+  background: #fff;
+  border: 1px solid #b9c7d7;
+  border-radius: 7px;
+  color: #273a4f;
+  font-weight: 800;
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.lawRefreshButton {
+  gap: 7px;
+}
+
+.lawRefreshButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.lawStatusSummary {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.lawStatusSummary p {
+  margin: 0;
+}
+
+.lawResult {
+  color: #157347;
+  font-weight: 900;
+}
+
+.lawError,
+.unavailableArticles {
+  color: #8b5a22;
+}
+
+.simulationNotice {
+  background: #6d3bb5;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  margin: 12px 0 0;
+  padding: 8px 10px;
+}
+
+.changedLawList {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.changedLawItem {
+  background: #fff;
+  border: 1px solid #e0b17f;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.changedLawItem summary {
+  cursor: pointer;
+  gap: 12px;
+  justify-content: space-between;
+  list-style: none;
+  padding: 12px;
+}
+
+.changedLawItem summary::-webkit-details-marker {
+  display: none;
+}
+
+.changedLawItem summary span {
+  display: grid;
+  gap: 3px;
+}
+
+.changedLawItem summary small {
+  color: #805121;
+}
+
+.changedLawItem[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.lawDetailGrid {
+  border-top: 1px solid #ecdfd1;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.lawDetailGrid dl {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+
+.lawDetailGrid dl div {
+  background: #f7f9fb;
+  border-radius: 6px;
+  min-width: 0;
+  padding: 9px;
+}
+
+.lawDetailGrid dt {
+  color: #687b90;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.lawDetailGrid dd {
+  line-height: 1.45;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.lawTextColumns {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lawTextColumns > div {
+  min-width: 0;
+}
+
+.lawTextColumns pre {
+  background: #f7f9fb;
+  border: 1px solid #e0e6ed;
+  border-radius: 6px;
+  font-family: inherit;
+  line-height: 1.6;
+  margin: 6px 0 0;
+  max-height: 230px;
+  overflow: auto;
+  padding: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sentenceDiff {
+  background: #fffaf4;
+  border-left: 3px solid #e7913d;
+  line-height: 1.55;
+  padding: 10px 12px;
+}
+
+.sentenceDiff p {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.lawAdminPanel {
+  background: #fff;
+  border: 1px solid #e0b17f;
+  border-radius: 8px;
+  margin-top: 14px;
+  padding: 14px;
+}
+
+.lawAdminPanel > p {
+  color: #71491f;
+  line-height: 1.55;
+  margin: 8px 0 12px;
+}
+
+.lawAdminActions {
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.approvalCheck {
+  gap: 7px;
+  line-height: 1.4;
+}
+
+.lawAdminActions > input {
+  border: 1px solid #bac7d5;
+  border-radius: 7px;
+  min-height: 38px;
+  padding: 0 10px;
+}
+
+.baselineResetButton {
+  margin-top: 12px;
+}
+
 .workspace {
   display: grid;
   gap: 16px;
@@ -766,6 +1022,25 @@ td textarea {
 
   .chatBotMessages {
     max-height: 400px;
+  }
+
+  .lawStatusHeader,
+  .lawAdminActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lawRefreshButton,
+  .baselineResetButton,
+  .lawAdminActions > button,
+  .lawAdminActions > input {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .lawDetailGrid dl,
+  .lawTextColumns {
+    grid-template-columns: 1fr;
   }
 }
 

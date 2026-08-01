@@ -1,9 +1,21 @@
-import { AlertCircle, Check, Download, FileImage, FileSpreadsheet, LockKeyhole, Mail, RefreshCw, Upload, User, X } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, Download, FileImage, FileSpreadsheet, LockKeyhole, Mail, RefreshCw, ShieldAlert, Upload, User, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Tesseract from 'tesseract.js';
 import * as XLSX from 'xlsx';
-import { fetchVatAct } from './lawApi';
+import { fetchMonitoredLaws } from './lawApi';
+import {
+  LAW_REVIEWED_STORAGE_KEY,
+  applyLawChangeGuard,
+  approveCurrentLawSnapshot,
+  compareLawSnapshots,
+  getChangedLawImpacts,
+  getRowLawImpacts,
+  prepareLawSnapshots,
+  readApprovedBaseline,
+  resetApprovedLawSnapshot,
+  splitChangedSentences,
+} from './lawChangeMonitor';
 import { judgeVat, normalizeText } from './rules';
 import { findVoucherLegalBasis } from './services/lawSearchService.ts';
 import './styles.css';
@@ -228,8 +240,8 @@ function buildDefaultLegalBasis(row, judgement) {
     .join('\n');
 }
 
-function applyJudgement(row, articleReferences = {}) {
-  const judgement = judgeVat(row, articleReferences);
+function applyJudgement(row, articleReferences = {}, lawComparisons = []) {
+  const judgement = applyLawChangeGuard(row, judgeVat(row, articleReferences), lawComparisons);
   return {
     id: crypto.randomUUID(),
     ...row,
@@ -533,7 +545,7 @@ function withLegalBasis(row, result) {
   };
 }
 
-function parseWorkbook(arrayBuffer, articleReferences = {}) {
+function parseWorkbook(arrayBuffer, articleReferences = {}, lawComparisons = []) {
   const workbook = XLSX.read(arrayBuffer, {
     type: 'array',
     raw: false,
@@ -552,7 +564,7 @@ function parseWorkbook(arrayBuffer, articleReferences = {}) {
   const shapedRows = dataRows
     .map((row) => shapeRow(row, columnMap))
     .filter(isValidRow)
-    .map((row) => applyJudgement(row, articleReferences));
+    .map((row) => applyJudgement(row, articleReferences, lawComparisons));
   return {
     rows: shapedRows,
     isResultExport,
@@ -625,7 +637,7 @@ function fallbackRowsFromText(text) {
   });
 }
 
-function parseOcrText(text, articleReferences = {}) {
+function parseOcrText(text, articleReferences = {}, lawComparisons = []) {
   const candidates = text
     .split(/\r?\n/)
     .map(normalizeText)
@@ -634,7 +646,7 @@ function parseOcrText(text, articleReferences = {}) {
     .filter((line) => hasMoney(line) || /공제|불공제|비공제/.test(line) || (hasKoreanWord(line) && hasMoney(line)))
     .map(mapOcrLineToRow)
     .filter(isValidRow)
-    .map((row) => applyJudgement(row, articleReferences));
+    .map((row) => applyJudgement(row, articleReferences, lawComparisons));
 
   return candidates.length ? candidates : fallbackRowsFromText(text);
 }
@@ -670,6 +682,152 @@ async function preprocessImage(file) {
   }
   context.putImageData(imageData, 0, 0);
   return canvas.toDataURL('image/png');
+}
+
+function formatLawDate(value) {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  if (digits.length !== 8) return value || '-';
+  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+}
+
+function formatCheckedAt(value) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).format(new Date(value));
+}
+
+function LawStatusPanel({
+  lawState,
+  rows,
+  reviewed,
+  approvalChecked,
+  approvalText,
+  onRefresh,
+  onReview,
+  onApprovalChecked,
+  onApprovalText,
+  onApprove,
+  onReset,
+}) {
+  const changed = getChangedLawImpacts(lawState.comparisons);
+  const unavailable = lawState.comparisons.filter((item) => item.status === 'unavailable');
+  const canApproveSnapshot = lawState.snapshots.length === 4 && unavailable.length === 0;
+  const tone = lawState.simulated ? 'simulation' : lawState.status;
+  const title = lawState.status === 'loading'
+    ? '최신 법령 확인 중'
+    : lawState.status === 'changed'
+      ? '세법 변경 감지'
+      : lawState.status === 'unavailable'
+        ? '최신 법령을 확인하지 못했습니다.'
+        : '최신 법령 확인 완료';
+
+  return (
+    <section className={`lawStatusCard ${tone}`} aria-live="polite">
+      <div className="lawStatusHeader">
+        <div className="lawStatusTitle">
+          {lawState.status === 'changed' || lawState.status === 'unavailable' ? <ShieldAlert size={22} /> : <Check size={22} />}
+          <div>
+            <span>법령 상태</span>
+            <strong>{lawState.status === 'changed' ? `⚠ ${title}` : title}</strong>
+          </div>
+        </div>
+        <button type="button" className="lawRefreshButton" onClick={onRefresh} disabled={lawState.status === 'loading'}>
+          <RefreshCw className={lawState.status === 'loading' ? 'spin' : ''} size={16} />
+          최신 법령 다시 확인
+        </button>
+      </div>
+
+      {lawState.simulated ? <p className="simulationNotice">테스트용 법령 변경 시뮬레이션입니다.</p> : null}
+
+      <div className="lawStatusSummary">
+        <p>부가가치세법 제26조·제38조·제39조 및 시행령 제79조</p>
+        {lawState.status === 'loading' ? <p>국가법령정보 API에서 현행 조문을 조회하고 있습니다.</p> : null}
+        {lawState.status === 'unchanged' ? <p className="lawResult">변경 없음</p> : null}
+        {lawState.status === 'changed' ? (
+          <p>기준 조문과 현재 조문이 다릅니다. 관련 자동 판정이 검토필요로 전환되었습니다.</p>
+        ) : null}
+        {lawState.status === 'unavailable' ? (
+          <p>기존 판정 규칙은 유지되며 실제 신고 전 최신 법령을 별도로 확인하세요.</p>
+        ) : null}
+        {lawState.checkedAt ? <small>마지막 확인: {formatCheckedAt(lawState.checkedAt)}</small> : null}
+        {lawState.error ? <small className="lawError">{lawState.error}</small> : null}
+      </div>
+
+      {changed.length ? (
+        <div className="changedLawList">
+          {changed.map((comparison) => {
+            const diff = splitChangedSentences(comparison.baseline?.normalizedContent, comparison.current?.normalizedContent);
+            const relatedCount = rows.filter((row) => getRowLawImpacts(row, row, [comparison]).length).length;
+            return (
+              <details className="changedLawItem" key={comparison.key}>
+                <summary>
+                  <span>
+                    <strong>{comparison.current?.articleLabel || `${comparison.baseline?.lawName} 제${comparison.baseline?.articleNumber}조`}</strong>
+                    <small>상태: 검토 필요 · 관련 거래 {relatedCount}건</small>
+                  </span>
+                  <ChevronDown size={18} />
+                </summary>
+                <div className="lawDetailGrid">
+                  <dl>
+                    <div><dt>기준 시행일자</dt><dd>{formatLawDate(comparison.baseline?.enforcementDate)}</dd></div>
+                    <div><dt>현재 시행일자</dt><dd>{formatLawDate(comparison.current?.enforcementDate)}</dd></div>
+                    <div><dt>영향받는 규칙</dt><dd>{comparison.impact.rules.join(', ')}</dd></div>
+                    <div><dt>관련 거래</dt><dd>{relatedCount}건</dd></div>
+                  </dl>
+                  <div className="lawTextColumns">
+                    <div><strong>기준 조문</strong><pre>{comparison.baseline?.normalizedContent || '기준 조문 없음'}</pre></div>
+                    <div><strong>현재 조문</strong><pre>{comparison.current?.normalizedContent || '현재 조문 없음'}</pre></div>
+                  </div>
+                  <div className="sentenceDiff">
+                    <strong>간단 변경 비교</strong>
+                    {comparison.dateChanged ? <p>시행일자가 변경되었습니다.</p> : null}
+                    {diff.removed.length ? <p><b>기존에만 있음:</b> {diff.removed.join(' / ')}</p> : null}
+                    {diff.added.length ? <p><b>현재에만 있음:</b> {diff.added.join(' / ')}</p> : null}
+                    {!comparison.dateChanged && !diff.removed.length && !diff.added.length && comparison.simulated
+                      ? <p>시뮬레이션을 위해 제39조가 변경된 상태로 비교되었습니다.</p>
+                      : null}
+                  </div>
+                </div>
+              </details>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {unavailable.length && lawState.status !== 'loading' ? (
+        <p className="unavailableArticles">조회하지 못한 조문: {unavailable.map((item) => item.baseline ? `${item.baseline.lawName} 제${item.baseline.articleNumber}조` : item.key).join(', ')}</p>
+      ) : null}
+
+      {changed.length ? (
+        <div className="lawAdminPanel">
+          <strong>관리자 검토 및 승인</strong>
+          <p>기준 조문 갱신은 판정 규칙이 최신 세법과 일치하는지 검토한 후 진행해야 합니다. 기준 조문만 갱신하면 잘못된 자동 판정이 발생할 수 있습니다.</p>
+          <div className="lawAdminActions">
+            <button type="button" onClick={onReview} className="secondaryButton">{reviewed ? '변경 내용 확인 완료' : '변경 내용 확인'}</button>
+            <label className="approvalCheck">
+              <input type="checkbox" checked={approvalChecked} onChange={(event) => onApprovalChecked(event.target.checked)} />
+              최신 조문과 관련 판정 규칙을 검토했습니다.
+            </label>
+            <input value={approvalText} onChange={(event) => onApprovalText(event.target.value)} placeholder="확인 문구 ‘승인’ 입력" aria-label="승인 확인 문구" />
+            <button
+              type="button"
+              className="primary"
+              onClick={onApprove}
+              disabled={!approvalChecked || approvalText !== '승인' || lawState.simulated || !canApproveSnapshot}
+              title={lawState.simulated
+                ? '시뮬레이션에서는 실제 기준을 갱신할 수 없습니다.'
+                : !canApproveSnapshot ? '모든 감시 대상 조문을 조회한 뒤 승인할 수 있습니다.' : ''}
+            >
+              검토 완료 및 기준 조문 갱신
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <button type="button" className="baselineResetButton" onClick={onReset}>승인 기준 초기화</button>
+    </section>
+  );
 }
 
 function ChatBot() {
@@ -792,6 +950,12 @@ function App() {
   const [rows, setRows] = useState([]);
   const [status, setStatus] = useState('업로드 대기');
   const [lawInfo, setLawInfo] = useState(null);
+  const [lawState, setLawState] = useState({
+    status: 'loading', comparisons: [], snapshots: [], checkedAt: '', error: '', simulated: false,
+  });
+  const [lawReviewed, setLawReviewed] = useState(() => localStorage.getItem(LAW_REVIEWED_STORAGE_KEY) === 'true');
+  const [approvalChecked, setApprovalChecked] = useState(false);
+  const [approvalText, setApprovalText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [legalBasisLoadingId, setLegalBasisLoadingId] = useState('');
   const [rowReports, setRowReports] = useState({});
@@ -800,6 +964,8 @@ function App() {
   const [decisionFilter, setDecisionFilter] = useState('');
   const excelInputRef = useRef(null);
   const ocrInputRef = useRef(null);
+  const lawFetchStartedRef = useRef(false);
+  const simulateLawChange = useMemo(() => new URLSearchParams(window.location.search).get('simulateLawChange') === '1', []);
 
   const summary = useMemo(() => {
     return RESULT_OPTIONS.reduce((acc, option) => {
@@ -813,37 +979,85 @@ function App() {
     return rows.filter((row) => normalizeDecision(row['판정']) === decisionFilter);
   }, [decisionFilter, rows]);
 
-  useEffect(() => {
-    if (APP_ENABLE_LOGIN && !session) return undefined;
-    let cancelled = false;
+  function rejudgeRows(currentRows, articleReferences, comparisons) {
+    return currentRows.map((row) => {
+      if (row._userModifiedDecision) return row;
+      const judgement = applyLawChangeGuard(row, judgeVat(row, articleReferences), comparisons);
+      return {
+        ...row,
+        ...judgement,
+        법령근거: buildDefaultLegalBasis(row, judgement),
+      };
+    });
+  }
 
-    async function loadVatAct() {
-      try {
-        const vatAct = await fetchVatAct();
-        if (cancelled) return;
-        setLawInfo(vatAct);
-        setRows((currentRows) =>
-          currentRows.map(({ id, 사유, decision, confidence, reason, evidenceKeywords, warning, legalBasis, 판정, 신뢰도, 근거조항, 근거키워드, 주의, 법령근거, '법 기준 사유': legalReason, ...baseRow }) => {
-            const judgement = judgeVat(baseRow, vatAct.articleReferences);
-            return {
-              id,
-              ...baseRow,
-              ...judgement,
-              법령근거: 법령근거 && 법령근거 !== '[]' ? 법령근거 : buildDefaultLegalBasis(baseRow, judgement),
-            };
-          }),
-        );
-      } catch (error) {
-        if (cancelled) return;
-      }
+  async function refreshMonitoredLaws() {
+    setLawState((current) => ({ ...current, status: 'loading', error: '', simulated: simulateLawChange }));
+    try {
+      const lawData = await fetchMonitoredLaws();
+      const snapshots = await prepareLawSnapshots(lawData.snapshots);
+      const comparisons = compareLawSnapshots(readApprovedBaseline(), snapshots, { simulate: simulateLawChange });
+      const hasChanges = comparisons.some((item) => item.status === 'changed');
+      const hasUnavailable = comparisons.some((item) => item.status === 'unavailable' || item.status === 'not_monitored');
+      const nextStatus = hasChanges ? 'changed' : hasUnavailable || lawData.errors.length ? 'unavailable' : 'unchanged';
+      setLawInfo(lawData);
+      setLawState({
+        status: nextStatus,
+        comparisons,
+        snapshots,
+        checkedAt: lawData.checkedAt,
+        error: lawData.errors.join(' / '),
+        simulated: simulateLawChange,
+      });
+      setRows((currentRows) => rejudgeRows(currentRows, lawData.articleReferences, comparisons));
+    } catch (error) {
+      setLawState({
+        status: 'unavailable', comparisons: [], snapshots: [], checkedAt: new Date().toISOString(),
+        error: error?.message || '법령 조회 실패', simulated: simulateLawChange,
+      });
     }
+  }
 
-    loadVatAct();
-
-    return () => {
-      cancelled = true;
-    };
+  useEffect(() => {
+    if (APP_ENABLE_LOGIN && !session) return;
+    if (lawFetchStartedRef.current) return;
+    lawFetchStartedRef.current = true;
+    refreshMonitoredLaws();
+    // 페이지 진입 또는 로그인 직후 1회만 조회한다. 이후에는 사용자가 새로고침 버튼으로 요청한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
+
+  function markLawChangesReviewed() {
+    localStorage.setItem(LAW_REVIEWED_STORAGE_KEY, 'true');
+    setLawReviewed(true);
+  }
+
+  function approveLawBaseline() {
+    if (
+      !approvalChecked || approvalText !== '승인' || lawState.snapshots.length !== 4 || lawState.simulated
+      || lawState.comparisons.some((item) => item.status === 'unavailable')
+    ) return;
+    const nextBaseline = approveCurrentLawSnapshot(lawState.snapshots);
+    const comparisons = compareLawSnapshots(nextBaseline, lawState.snapshots);
+    setLawState((current) => ({ ...current, status: 'unchanged', comparisons, simulated: false }));
+    setRows((currentRows) => rejudgeRows(currentRows, lawInfo?.articleReferences ?? {}, comparisons));
+    setLawReviewed(false);
+    setApprovalChecked(false);
+    setApprovalText('');
+  }
+
+  function resetLawBaseline() {
+    if (!window.confirm('관리자 승인 기준을 초기화하고 프로젝트 기본 기준으로 돌아가시겠습니까?')) return;
+    const baseline = resetApprovedLawSnapshot();
+    const comparisons = compareLawSnapshots(baseline, lawState.snapshots, { simulate: simulateLawChange });
+    const status = comparisons.some((item) => item.status === 'changed') ? 'changed'
+      : comparisons.some((item) => item.status !== 'unchanged') ? 'unavailable' : 'unchanged';
+    setLawState((current) => ({ ...current, status, comparisons }));
+    setRows((currentRows) => rejudgeRows(currentRows, lawInfo?.articleReferences ?? {}, comparisons));
+    setLawReviewed(false);
+    setApprovalChecked(false);
+    setApprovalText('');
+  }
 
   function handleLogin(nextSession) {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
@@ -877,7 +1091,7 @@ function App() {
 
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const parsed = parseWorkbook(arrayBuffer, lawInfo?.articleReferences ?? {});
+      const parsed = parseWorkbook(arrayBuffer, lawInfo?.articleReferences ?? {}, lawState.comparisons);
       setRows(parsed.rows);
       setStatus(parsed.isResultExport ? '결과 파일 재업로드 감지' : '엑셀 분석 완료');
     } catch (error) {
@@ -903,7 +1117,7 @@ function App() {
       const processedImage = await preprocessImage(file);
       const result = await Tesseract.recognize(processedImage, 'kor+eng');
       const text = result.data.text;
-      const parsedRows = parseOcrText(text, lawInfo?.articleReferences ?? {});
+      const parsedRows = parseOcrText(text, lawInfo?.articleReferences ?? {}, lawState.comparisons);
       setRows(parsedRows);
       setStatus(parsedRows.length ? `거래 후보 ${parsedRows.length}건 / 검토필요` : '거래 후보 0건');
     } catch (error) {
@@ -919,8 +1133,14 @@ function App() {
       currentRows.map((row) => {
         if (row.id !== id) return row;
         const nextRow = { ...row, [column]: NUMERIC_COLUMNS.includes(column) ? normalizeAmount(value) : value };
+        if (column === '판정') return { ...nextRow, _userModifiedDecision: true, _lawGuard: null };
         if (!['판정', '신뢰도', '근거조항', '근거키워드', '주의', '법령근거', '법 기준 사유'].includes(column)) {
-          const judgement = judgeVat(nextRow, lawInfo?.articleReferences ?? {});
+          if (nextRow._userModifiedDecision) return nextRow;
+          const judgement = applyLawChangeGuard(
+            nextRow,
+            judgeVat(nextRow, lawInfo?.articleReferences ?? {}),
+            lawState.comparisons,
+          );
           return { ...nextRow, ...judgement, 법령근거: buildDefaultLegalBasis(nextRow, judgement) };
         }
         return nextRow;
@@ -1152,6 +1372,20 @@ function App() {
         type="file"
         accept="image/png,image/jpeg"
         onChange={(event) => handleOcrImage(event.target.files?.[0])}
+      />
+
+      <LawStatusPanel
+        lawState={lawState}
+        rows={rows}
+        reviewed={lawReviewed}
+        approvalChecked={approvalChecked}
+        approvalText={approvalText}
+        onRefresh={refreshMonitoredLaws}
+        onReview={markLawChangesReviewed}
+        onApprovalChecked={setApprovalChecked}
+        onApprovalText={setApprovalText}
+        onApprove={approveLawBaseline}
+        onReset={resetLawBaseline}
       />
 
       <section className="workspace">
