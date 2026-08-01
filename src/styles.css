@@ -308,8 +308,7 @@ h1 {
   font-size: 18px;
 }
 
-.lawRefreshButton,
-.baselineResetButton {
+.lawRefreshButton {
   background: #fff;
   border: 1px solid #b9c7d7;
   border-radius: 7px;
@@ -494,10 +493,6 @@ h1 {
   border-radius: 7px;
   min-height: 38px;
   padding: 0 10px;
-}
-
-.baselineResetButton {
-  margin-top: 12px;
 }
 
 .workspace {
@@ -1031,7 +1026,6 @@ td textarea {
   }
 
   .lawRefreshButton,
-  .baselineResetButton,
   .lawAdminActions > button,
   .lawAdminActions > input {
     justify-content: center;

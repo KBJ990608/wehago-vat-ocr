@@ -13,7 +13,6 @@ import {
   getRowLawImpacts,
   prepareLawSnapshots,
   readApprovedBaseline,
-  resetApprovedLawSnapshot,
   splitChangedSentences,
 } from './lawChangeMonitor';
 import { judgeVat, normalizeText } from './rules';
@@ -708,7 +707,6 @@ function LawStatusPanel({
   onApprovalChecked,
   onApprovalText,
   onApprove,
-  onReset,
 }) {
   const changed = getChangedLawImpacts(lawState.comparisons);
   const unavailable = lawState.comparisons.filter((item) => item.status === 'unavailable');
@@ -825,7 +823,6 @@ function LawStatusPanel({
         </div>
       ) : null}
 
-      <button type="button" className="baselineResetButton" onClick={onReset}>승인 기준 초기화</button>
     </section>
   );
 }
@@ -1040,19 +1037,6 @@ function App() {
     const nextBaseline = approveCurrentLawSnapshot(lawState.snapshots);
     const comparisons = compareLawSnapshots(nextBaseline, lawState.snapshots);
     setLawState((current) => ({ ...current, status: 'unchanged', comparisons, simulated: false }));
-    setRows((currentRows) => rejudgeRows(currentRows, lawInfo?.articleReferences ?? {}, comparisons));
-    setLawReviewed(false);
-    setApprovalChecked(false);
-    setApprovalText('');
-  }
-
-  function resetLawBaseline() {
-    if (!window.confirm('관리자 승인 기준을 초기화하고 프로젝트 기본 기준으로 돌아가시겠습니까?')) return;
-    const baseline = resetApprovedLawSnapshot();
-    const comparisons = compareLawSnapshots(baseline, lawState.snapshots, { simulate: simulateLawChange });
-    const status = comparisons.some((item) => item.status === 'changed') ? 'changed'
-      : comparisons.some((item) => item.status !== 'unchanged') ? 'unavailable' : 'unchanged';
-    setLawState((current) => ({ ...current, status, comparisons }));
     setRows((currentRows) => rejudgeRows(currentRows, lawInfo?.articleReferences ?? {}, comparisons));
     setLawReviewed(false);
     setApprovalChecked(false);
@@ -1385,7 +1369,6 @@ function App() {
         onApprovalChecked={setApprovalChecked}
         onApprovalText={setApprovalText}
         onApprove={approveLawBaseline}
-        onReset={resetLawBaseline}
       />
 
       <section className="workspace">
