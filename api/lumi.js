@@ -8,46 +8,27 @@ const RATE_LIMIT_MAX = 8;
 const buckets = globalThis.__WEHAGO_LUMI_RATE_LIMIT__ || new Map();
 globalThis.__WEHAGO_LUMI_RATE_LIMIT__ = buckets;
 
-const OFFICIAL_CORE_RULES = [
+// 고정하는 정보는 질문 키워드와 확인할 법령·조문 번호뿐이다.
+// 조문 원문, 시행일자, 요약과 공제 여부 결론은 반드시 공식 API 응답에서 가져온다.
+const OFFICIAL_ARTICLE_ROUTES = [
   {
-    id: 'vat-act-39-1-6',
     test: /(접대비|기업업무추진비|접대 목적|유사한 비용)/,
-    title: '부가가치세법 제39조 제1항 제6호',
-    date: '2026-01-02',
-    summary:
-      '기업업무추진비 및 이와 유사한 비용으로서 대통령령으로 정하는 비용의 지출에 관련된 매입세액은 매출세액에서 공제하지 않습니다.',
+    articles: [
+      { lawName: '부가가치세법', articleNumber: '39' },
+      { lawName: '부가가치세법 시행령', articleNumber: '79' },
+    ],
   },
   {
-    id: 'vat-decree-79',
-    test: /(접대비|기업업무추진비|접대 목적|유사한 비용)/,
-    title: '부가가치세법 시행령 제79조',
-    date: '2026-04-01',
-    summary:
-      '부가가치세법 제39조 제1항 제6호의 비용은 소득세법 제35조 및 법인세법 제25조에 따른 기업업무추진비 및 이와 유사한 비용의 지출을 말합니다.',
-  },
-  {
-    id: 'vat-act-39-1-4',
     test: /(사업과 직접 관련이 없|업무무관|사적 사용|개인적 지출)/,
-    title: '부가가치세법 제39조 제1항 제4호',
-    date: '2026-01-02',
-    summary:
-      '사업과 직접 관련이 없는 지출로서 대통령령으로 정하는 지출에 대한 매입세액은 공제하지 않습니다.',
+    articles: [{ lawName: '부가가치세법', articleNumber: '39' }],
   },
   {
-    id: 'vat-act-39-1-5',
     test: /(비영업용.*승용|소형승용|승용차|자동차.*구입|자동차.*임차|자동차.*유지)/,
-    title: '부가가치세법 제39조 제1항 제5호',
-    date: '2026-01-02',
-    summary:
-      '개별소비세법상 일정 자동차의 구입·임차·유지 관련 매입세액은 원칙적으로 공제하지 않으며, 운수업·자동차판매업 등 직접 영업에 사용하는 경우는 제외될 수 있습니다.',
+    articles: [{ lawName: '부가가치세법', articleNumber: '39' }],
   },
   {
-    id: 'vat-act-39-1-7',
     test: /(면세사업|면세 매출|토지.*관련|공통매입세액)/,
-    title: '부가가치세법 제39조 제1항 제7호',
-    date: '2026-01-02',
-    summary:
-      '면세사업 등에 관련된 매입세액과 대통령령으로 정하는 토지 관련 매입세액은 공제하지 않습니다. 과세·면세 공통 사용분은 별도 안분 검토가 필요합니다.',
+    articles: [{ lawName: '부가가치세법', articleNumber: '39' }],
   },
 ];
 
@@ -155,20 +136,22 @@ function normalizeHit(raw, target) {
   };
 }
 
+function articleRoutesForQuery(query) {
+  const seen = new Set();
+  return OFFICIAL_ARTICLE_ROUTES
+    .filter((route) => route.test.test(query))
+    .flatMap((route) => route.articles)
+    .filter((article) => {
+      const key = `${article.lawName}|${article.articleNumber}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 function expandQuery(query) {
-  const additions = [];
-  if (/(접대비|기업업무추진비|접대 목적)/.test(query)) {
-    additions.push('기업업무추진비 매입세액 불공제 부가가치세법 제39조 제1항 제6호 시행령 제79조');
-  }
-  if (/(승용차|소형승용|자동차.*구입|자동차.*임차|자동차.*유지)/.test(query)) {
-    additions.push('비영업용 소형승용자동차 매입세액 불공제 부가가치세법 제39조 제1항 제5호');
-  }
-  if (/(업무무관|사업과 직접 관련이 없|사적 사용|개인적 지출)/.test(query)) {
-    additions.push('사업과 직접 관련이 없는 지출 매입세액 불공제 부가가치세법 제39조 제1항 제4호');
-  }
-  if (/(면세사업|면세 매출|토지.*관련)/.test(query)) {
-    additions.push('면세사업 토지 관련 매입세액 불공제 부가가치세법 제39조 제1항 제7호');
-  }
+  const additions = articleRoutesForQuery(query)
+    .map(({ lawName, articleNumber }) => `${lawName} 제${articleNumber}조`);
   return normalize([query, ...additions].join(' '));
 }
 
@@ -239,19 +222,102 @@ async function fetchLawDetail(hit, query) {
   }
 }
 
-function officialRuleHits(query) {
-  return OFFICIAL_CORE_RULES
-    .filter((rule) => rule.test.test(query))
-    .map((rule) => ({
-      target: 'law',
-      title: rule.title,
-      docId: rule.id,
-      mst: '',
-      id: '',
-      date: rule.date,
-      summary: rule.summary,
-      officialCoreRule: true,
-    }));
+function findArticleNode(node, articleNumber) {
+  if (!node || typeof node !== 'object') return null;
+  if (
+    normalize(node.조문번호) === String(articleNumber)
+    && normalize(node.조문여부 || '조문') === '조문'
+  ) return node;
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = findArticleNode(item, articleNumber);
+        if (found) return found;
+      }
+    } else if (value && typeof value === 'object') {
+      const found = findArticleNode(value, articleNumber);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function collectArticleText(node, output = []) {
+  if (!node || typeof node !== 'object') return output;
+  const contentKeys = ['조문내용', '항내용', '호내용', '목내용'];
+  for (const key of contentKeys) {
+    const value = normalize(node[key]);
+    if (value) output.push(value);
+  }
+  for (const [key, value] of Object.entries(node)) {
+    if (contentKeys.includes(key)) continue;
+    if (Array.isArray(value)) value.forEach((item) => collectArticleText(item, output));
+    else if (value && typeof value === 'object') collectArticleText(value, output);
+  }
+  return output;
+}
+
+function findValue(node, keys) {
+  if (!node || typeof node !== 'object') return '';
+  for (const key of keys) {
+    const value = normalize(node[key]);
+    if (value && typeof node[key] !== 'object') return value;
+  }
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = findValue(item, keys);
+        if (found) return found;
+      }
+    } else if (value && typeof value === 'object') {
+      const found = findValue(value, keys);
+      if (found) return found;
+    }
+  }
+  return '';
+}
+
+async function fetchOfficialArticle(reference) {
+  const candidates = await searchLaw('law', reference.lawName, 10);
+  const law = candidates.find((candidate) => normalize(candidate.title) === reference.lawName);
+  if (!law?.mst && !law?.id) throw new Error(`official_law_not_found_${reference.lawName}`);
+
+  const url = new URL(`${LAW_PROXY}/v1/korean-law/detail`);
+  url.searchParams.set('target', 'law');
+  if (law.mst) url.searchParams.set('MST', law.mst);
+  if (law.id) url.searchParams.set('ID', law.id);
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!response.ok) throw new Error(`official_law_detail_${response.status}`);
+
+  const payload = await response.json();
+  const article = findArticleNode(payload, reference.articleNumber);
+  if (!article) throw new Error(`official_article_not_found_${reference.lawName}_${reference.articleNumber}`);
+  const content = normalize(collectArticleText(article).join(' '));
+  if (!content) throw new Error(`official_article_empty_${reference.lawName}_${reference.articleNumber}`);
+
+  return {
+    target: 'law',
+    title: `${reference.lawName} 제${reference.articleNumber}조`,
+    docId: law.mst || law.id,
+    mst: law.mst,
+    id: law.id,
+    date: normalize(article.조문시행일자) || findValue(payload, ['시행일자']),
+    summary: content,
+    officialArticle: true,
+  };
+}
+
+async function officialArticleHits(query) {
+  const routes = articleRoutesForQuery(query);
+  const results = await Promise.allSettled(routes.map(fetchOfficialArticle));
+  return {
+    requested: routes.length,
+    hits: results.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []),
+    errors: results.flatMap((result) => result.status === 'rejected' ? [result.reason?.message || 'official_article_failed'] : []),
+  };
 }
 
 function dedupeHits(hits) {
@@ -268,7 +334,7 @@ function buildContext(hits) {
   return hits.slice(0, 8).map((hit, index) => {
     const type = hit.target === 'law' ? '법령' : hit.target === 'expc' ? '해석례' : '판례';
     return [
-      `[${index + 1}] ${type}${hit.officialCoreRule ? ' · 핵심 조문' : ''}`,
+      `[${index + 1}] ${type}${hit.officialArticle ? ' · 공식 최신 조문 원문' : ''}`,
       `제목: ${hit.title || '제목 없음'}`,
       hit.docId ? `문서번호: ${hit.docId}` : '',
       hit.date ? `일자: ${hit.date}` : '',
@@ -301,7 +367,9 @@ async function askOpenAI(query, hits, apiKey) {
           content: [
             "당신은 한국 부가가치세 검토를 돕는 AI 어시스턴트 '루미'입니다.",
             '반드시 제공된 검색 근거 안에서만 답하고 근거가 부족하면 단정하지 마세요.',
-            '핵심 조문이 질문을 직접 해결하면 결론을 먼저 분명하게 제시하고 해당 조문 번호를 적으세요.',
+            '공식 최신 조문 원문이 있으면 그 원문의 현재 문언을 최우선 근거로 사용하세요.',
+            '코드에 미리 정해진 세무 결론이 있다고 가정하지 말고, 제공된 최신 원문에서만 결론을 도출하세요.',
+            '시행일자와 조문 내용은 검색 근거에 표시된 값만 사용하고 추측하지 마세요.',
             '예외나 사실관계에 따라 달라질 수 있는 부분만 별도로 구분하세요.',
             '답변은 결론, 근거, 확인할 사항 순서로 간결한 한국어 존댓말로 작성하세요.',
             '근거는 [1], [2]처럼 자료 번호를 표시하세요.',
@@ -361,7 +429,17 @@ export default async function handler(req, res) {
     const detailedHits = await Promise.all(
       searchedHits.slice(0, 6).map((hit) => fetchLawDetail(hit, expanded)),
     );
-    const hits = dedupeHits([...officialRuleHits(query), ...detailedHits, ...searchedHits]).slice(0, 10);
+    const officialArticles = await officialArticleHits(query);
+    if (officialArticles.requested && !officialArticles.hits.length) {
+      console.warn('Lumi official article lookup failed', officialArticles.errors);
+      return sendJson(res, 200, {
+        answer: '최신 공식 조문 원문을 확인하지 못해 공제 여부를 단정할 수 없습니다. 잠시 후 다시 질문하거나 국가법령정보센터에서 해당 조문을 직접 확인해 주세요.',
+        generated: false,
+        ai_connected: true,
+        hits: [],
+      });
+    }
+    const hits = dedupeHits([...officialArticles.hits, ...detailedHits, ...searchedHits]).slice(0, 10);
 
     if (!hits.length) {
       return sendJson(res, 200, {
