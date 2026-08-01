@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const source = await readFile(new URL('../api/lumi.js', import.meta.url), 'utf8');
+const ragRouteSource = await readFile(new URL('../api/rag/ask.js', import.meta.url), 'utf8');
 const routeBlock = source.match(/const OFFICIAL_ARTICLE_ROUTES = (\[[\s\S]*?\n\]);/)?.[1] || '';
 
 assert.ok(routeBlock, '질문 키워드와 공식 조문 경로 매핑이 있어야 합니다.');
@@ -14,5 +15,6 @@ assert.match(source, /date:\s*normalize\(article\.조문시행일자\)/);
 assert.match(source, /summary:\s*content/);
 assert.match(source, /공식 최신 조문 원문/);
 assert.match(source, /최신 공식 조문 원문을 확인하지 못해 공제 여부를 단정할 수 없습니다/);
+assert.match(ragRouteSource, /export \{ default \} from '\.\.\/lumi\.js'/);
 
-console.log('lumi grounding checks: 10 passed');
+console.log('lumi grounding checks: 11 passed');
