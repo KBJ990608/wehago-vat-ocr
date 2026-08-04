@@ -35,9 +35,18 @@ const COLUMNS = [
   '차변계정',
   '대변계정',
   '전표상태',
+  // 선택적 컬럼. 업로드 파일에 없으면 빈 값으로 남고, 값이 없을 때 거래처명이나
+  // 업종으로 간이과세자·면세사업자를 추정하지 않는다.
+  '사업자유형',
 ];
 
+// 위치 기반 폴백 매핑과 기존 결과 파일 인식이 흔들리지 않도록 선택적 컬럼은
+// COLUMNS 맨 뒤에만 추가한다.
+const OPTIONAL_COLUMNS = ['사업자유형'];
+
 const RESULT_COLUMNS = [...COLUMNS, '판정', '신뢰도', '근거조항', '근거키워드', '주의', '법령근거', '법 기준 사유'];
+// 선택적 컬럼이 없는 과거 결과 파일도 재업로드로 인식한다.
+const RESULT_SIGNATURE_COLUMNS = RESULT_COLUMNS.filter((column) => !OPTIONAL_COLUMNS.includes(column));
 const RESULT_OPTIONS = ['공제', '불공제', '검토필요'];
 
 const LABELS = {
@@ -56,6 +65,7 @@ const LABELS = {
   '차변계정': '차변계정',
   '대변계정': '대변계정',
   '전표상태': '전표상태',
+  '사업자유형': '사업자유형',
   '판정': '판정',
   '신뢰도': '신뢰도',
   '근거조항': '근거조항',
@@ -93,6 +103,7 @@ const COLUMN_ALIASES = {
   '차변계정': ['차변계정', '차변계정과목', '차변계정명', '차변'],
   '대변계정': ['대변계정', '대변계정과목', '상대계정'],
   '전표상태': ['전표상태', '상태', '처리상태'],
+  '사업자유형': ['사업자유형', '사업자구분', '과세유형', '공급자유형', '공급자구분'],
 };
 
 const NUMERIC_COLUMNS = ['공급가액', '세액', '비과세', '합계'];
@@ -205,6 +216,11 @@ function buildColumnMap(headers) {
     const aliases = COLUMN_ALIASES[column].map(canonicalHeader);
     const index = normalizedHeaders.findIndex((header) => {
       if (column === '국세청' && /공급가액|합계|금액|세액|봉사료/.test(header)) {
+        return false;
+      }
+      // '사업자구분', '공급자구분', '과세유형'은 '구분'·'유형'에 부분일치하므로
+      // 거래 구분이나 카드 유형 칸으로 잘못 매핑되지 않도록 먼저 제외한다.
+      if ((column === '구분' || column === '유형') && /사업자|공급자|과세유형/.test(header)) {
         return false;
       }
       return matchesHeader(header, aliases);
@@ -557,7 +573,7 @@ function parseWorkbook(arrayBuffer, articleReferences = {}, lawComparisons = [])
   const sheetRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', raw: false });
   const headerIndex = detectHeaderRow(sheetRows);
   const headers = mergeHeaderRows(sheetRows[headerIndex - 1] ?? [], sheetRows[headerIndex] ?? []);
-  const isResultExport = RESULT_COLUMNS.every((column) => headers.includes(column));
+  const isResultExport = RESULT_SIGNATURE_COLUMNS.every((column) => headers.includes(column));
   const columnMap = buildColumnMap(headers);
   const dataRows = sheetRows.slice(headerIndex + 1);
   const shapedRows = dataRows
@@ -1191,6 +1207,7 @@ function App() {
         '차변계정': '상품',
         '대변계정': '미지급금',
         '전표상태': '전표확정',
+        '사업자유형': '',
       },
       {
         '일자': '2026-01-06',
@@ -1208,6 +1225,7 @@ function App() {
         '차변계정': '운반비',
         '대변계정': '미지급금',
         '전표상태': '전표확정',
+        '사업자유형': '일반과세자',
       },
       {
         '일자': '2026-01-07',
@@ -1225,6 +1243,7 @@ function App() {
         '차변계정': '접대비',
         '대변계정': '카드미지급금',
         '전표상태': '전표확정',
+        '사업자유형': '',
       },
       {
         '일자': '2026-01-08',
@@ -1242,6 +1261,25 @@ function App() {
         '차변계정': '차량유지비',
         '대변계정': '카드미지급금',
         '전표상태': '전표확정',
+        '사업자유형': '',
+      },
+      {
+        '일자': '2026-01-09',
+        '거래처': '동네분식',
+        '구분': '과세',
+        '품명': '식대',
+        '공급가액': 20000,
+        '세액': 0,
+        '비과세': 0,
+        '합계': 20000,
+        '국세청': '선택불공제',
+        '업태': '음식점업',
+        '종목': '분식',
+        '유형': '일반',
+        '차변계정': '복리후생비',
+        '대변계정': '카드미지급금',
+        '전표상태': '전표확정',
+        '사업자유형': '간이과세자',
       },
     ];
     const worksheet = XLSX.utils.json_to_sheet(sampleRows, { header: COLUMNS });

@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "test:vat-rules": "node scripts/check-vat-rules.mjs",
     "test:law-monitor": "node scripts/check-law-monitor.mjs",
     "test:lumi-grounding": "node scripts/check-lumi-grounding.mjs",
     "electron:dev": "electron .",
